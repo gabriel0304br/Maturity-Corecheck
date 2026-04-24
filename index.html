@@ -1,0 +1,1511 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maturity Corecheck - Diagnóstico de TI</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js para os Gráficos de Radar -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; }
+        .view { display: none; }
+        .view.active { display: block; }
+        .option-card { transition: all 0.2s; }
+        .option-card.selected { border-color: #2563eb; background-color: #dbeafe; box-shadow: 0 0 0 2px #bfdbfe; }
+        
+        /* Oculta a navegação e ajusta o fundo na hora de imprimir o relatório em PDF */
+        @media print {
+            body { background-color: #fff; }
+            #main-nav, .print-hidden { display: none !important; }
+            .view { display: block !important; }
+            #view-dashboard, #view-companies, #view-questions, #view-evaluations, #view-login, #view-quiz { display: none !important; }
+            .print-shadow-none { box-shadow: none !important; border: none !important; }
+            .print-break-inside-avoid { break-inside: avoid; }
+            .print-mt-0 { margin-top: 0 !important; padding: 0 !important; }
+        }
+    </style>
+</head>
+<body class="text-gray-800 antialiased h-screen flex flex-col overflow-hidden print-mt-0">
+
+    <!-- NAVBAR -->
+    <nav id="main-nav" class="bg-slate-900 text-white shadow-md hidden flex-shrink-0">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center">
+                    <span class="font-bold text-xl tracking-tight text-blue-400">Maturity <span class="text-white">Corecheck</span></span>
+                    <div class="ml-10 flex items-baseline space-x-4" id="nav-links">
+                        <a href="#" onclick="navigate('dashboard')" class="hover:bg-slate-700 px-3 py-2 rounded-md text-sm font-medium">Dashboard</a>
+                        <a href="#" onclick="navigate('companies')" class="hover:bg-slate-700 px-3 py-2 rounded-md text-sm font-medium">Empresas</a>
+                        <a href="#" onclick="navigate('evaluations')" class="hover:bg-slate-700 px-3 py-2 rounded-md text-sm font-medium">Avaliações</a>
+                        <a href="#" onclick="navigate('questions')" id="nav-questions" class="hover:bg-slate-700 px-3 py-2 rounded-md text-sm font-medium hidden">Questões (Admin)</a>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span id="ai-status-badge" class="text-xs font-bold bg-emerald-500 text-white px-2 py-0.5 rounded">IA Ativa</span>
+                    <span id="current-user-display" class="text-sm text-slate-300"></span>
+                    <button onclick="logout()" class="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-md text-sm font-medium transition">Sair</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- OVERLAY DE PROCESSAMENTO IA -->
+    <div id="ai-loading-overlay" class="fixed inset-0 bg-slate-900 bg-opacity-80 backdrop-blur-sm hidden items-center justify-center z-[100] print-hidden">
+        <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4 text-center">
+            <div class="flex justify-center mb-5">
+                <div class="relative w-16 h-16">
+                    <div class="absolute inset-0 border-4 border-blue-100 rounded-full"></div>
+                    <div class="absolute inset-0 border-4 border-blue-600 rounded-full animate-spin" style="border-right-color: transparent; border-bottom-color: transparent;"></div>
+                </div>
+            </div>
+            <h3 class="text-xl font-bold text-slate-800 mb-2">Processando Diagnóstico com IA</h3>
+            <p class="text-sm text-gray-600 mb-4" id="ai-loading-step">Inicializando análise Gemini...</p>
+            <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                <div id="ai-loading-bar" class="bg-gradient-to-r from-blue-500 to-blue-700 h-2 rounded-full transition-all duration-700" style="width: 10%"></div>
+            </div>
+            <p class="text-[11px] text-gray-400 mt-4">Modelo: <span id="ai-loading-model" class="font-mono">gemini-2.5-flash</span></p>
+        </div>
+    </div>
+
+    <!-- ÁREA DE CONTEÚDO PRINCIPAL -->
+    <main class="flex-1 overflow-y-auto p-4 sm:p-8 print-mt-0">
+        <div class="max-w-6xl mx-auto w-full">
+
+            <!-- VISTA: LOGIN -->
+            <div id="view-login" class="view active max-w-md mx-auto mt-20 bg-white p-8 rounded-xl shadow-lg border border-gray-100">
+                <div class="text-center mb-8">
+                    <h1 class="text-3xl font-bold text-slate-900">Maturity <span class="text-blue-600">Corecheck</span></h1>
+                    <p class="text-gray-500 mt-2">Plataforma de Diagnóstico de TI</p>
+                </div>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Utilizador</label>
+                        <input type="text" id="login-user" class="w-full border-gray-300 rounded-lg p-3 border focus:ring-blue-500 focus:border-blue-500" placeholder="admin">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Palavra-passe</label>
+                        <input type="password" id="login-pass" class="w-full border-gray-300 rounded-lg p-3 border focus:ring-blue-500 focus:border-blue-500" placeholder="123">
+                    </div>
+                    <div>
+                        <p class="text-[11px] text-gray-500 mt-1 leading-snug">A integração com a IA (Gemini) já está ativa neste sistema. Basta fazer login e iniciar a avaliação.</p>
+                    </div>
+                    <button onclick="login()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition mt-4">Entrar no Sistema</button>
+                    <p class="text-xs text-center text-gray-400 mt-4">Admin: admin / 123 | Avaliador: avaliador / 123</p>
+                </div>
+            </div>
+
+            <!-- VISTA: DASHBOARD -->
+            <div id="view-dashboard" class="view">
+                <h2 class="text-2xl font-bold text-slate-800 mb-6">Visão Geral Corporativa</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-l-4 border-l-blue-500 border-gray-100">
+                        <div class="text-gray-500 text-sm font-semibold uppercase">Empresas Monitorizadas</div>
+                        <div class="text-4xl font-bold text-slate-800 mt-2" id="dash-companies-count">0</div>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-l-4 border-l-emerald-500 border-gray-100">
+                        <div class="text-gray-500 text-sm font-semibold uppercase">Avaliações Concluídas</div>
+                        <div class="text-4xl font-bold text-slate-800 mt-2" id="dash-evaluations-count">0</div>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-l-4 border-l-purple-500 border-gray-100">
+                        <div class="text-gray-500 text-sm font-semibold uppercase">Indicadores Base</div>
+                        <div class="text-4xl font-bold text-slate-800 mt-2" id="dash-questions-count">0</div>
+                    </div>
+                </div>
+                
+                <div class="flex gap-4">
+                    <button onclick="navigate('companies')" class="bg-blue-600 text-white hover:bg-blue-700 px-6 py-3 rounded-lg font-medium transition shadow-sm">+ Registrar Cliente</button>
+                    <button onclick="navigate('evaluations')" class="bg-slate-800 text-white hover:bg-slate-900 px-6 py-3 rounded-lg font-medium transition shadow-sm">Realizar Auditoria</button>
+                </div>
+            </div>
+
+            <!-- VISTA: EMPRESAS -->
+            <div id="view-companies" class="view">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-slate-800">Gestão de Clientes</h2>
+                    <button onclick="openCompanyForm()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition">+ Novo Cliente</button>
+                </div>
+
+                <div id="form-company" class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 mb-6 hidden">
+                    <h3 class="text-lg font-bold mb-4 border-b pb-2">Informações da Organização</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Nome Fantasia / Razão Social</label>
+                            <input type="text" id="comp-name" class="w-full border rounded-lg p-2.5 text-sm bg-gray-50">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Setor de Atuação</label>
+                            <select id="comp-industry" class="w-full border rounded-lg p-2.5 text-sm bg-gray-50">
+                                <option value="Financeiro">Mercado Financeiro / Bancos</option>
+                                <option value="Varejo">Retalho e E-commerce</option>
+                                <option value="Tecnologia">Tecnologia e SaaS</option>
+                                <option value="Saúde">Saúde (Hospitais, Clínicas)</option>
+                                <option value="Indústria">Indústria e Manufatura</option>
+                                <option value="Serviços">Serviços Gerais / Outros</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">NIF (Opcional)</label>
+                            <input type="text" id="comp-cnpj" class="w-full border rounded-lg p-2.5 text-sm bg-gray-50">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Executivo Patrocinador (Sponsor)</label>
+                            <input type="text" id="comp-contact" class="w-full border rounded-lg p-2.5 text-sm bg-gray-50">
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <button onclick="saveCompany()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 rounded-lg font-medium transition">Gravar Empresa</button>
+                        <button onclick="document.getElementById('form-company').classList.add('hidden')" class="text-gray-500 hover:text-gray-800 font-medium px-4">Cancelar</button>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-slate-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Cliente</th>
+                                <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Setor</th>
+                                <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Sponsor</th>
+                                <th class="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="companies-list" class="bg-white divide-y divide-gray-100"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- VISTA: QUESTÕES (ADMIN) -->
+            <div id="view-questions" class="view">
+                <h2 class="text-2xl font-bold text-slate-800 mb-6">Motor de Avaliação (Framework Base)</h2>
+                <div class="bg-blue-50 border border-blue-200 text-blue-800 p-4 rounded-xl text-sm mb-6 flex items-start">
+                    <svg class="w-5 h-5 mr-3 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <p>Contém 25 indicadores alinhados às melhores práticas (COBIT, ITIL 4, ISO 27001). A matriz de impacto e dificuldade é calculada de forma padronizada pelo sistema.</p>
+                </div>
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 max-h-[600px] overflow-y-auto" id="questions-list"></div>
+            </div>
+
+            <!-- VISTA: AVALIAÇÕES -->
+            <div id="view-evaluations" class="view">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-slate-800">Centro de Auditoria</h2>
+                    <button onclick="document.getElementById('modal-new-eval').classList.remove('hidden')" class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-lg font-medium transition shadow-sm flex items-center">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
+                        Nova Avaliação
+                    </button>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="evaluations-list"></div>
+
+                <!-- Modal Nova Avaliação -->
+                <div id="modal-new-eval" class="fixed inset-0 bg-slate-900 bg-opacity-60 hidden flex items-center justify-center z-50">
+                    <div class="bg-white p-6 rounded-2xl shadow-2xl max-w-md w-full">
+                        <h3 class="text-xl font-bold mb-1">Iniciar Diagnóstico</h3>
+                        <p class="text-sm text-gray-500 mb-5">Selecione o cliente que deseja auditar.</p>
+                        
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Cliente / Organização</label>
+                        <select id="eval-company-select" class="w-full border border-gray-300 rounded-lg p-3 mb-6 bg-gray-50 focus:ring-blue-500 focus:border-blue-500 outline-none"></select>
+                        <div class="flex justify-end space-x-3">
+                            <button onclick="document.getElementById('modal-new-eval').classList.add('hidden')" class="px-5 py-2.5 text-gray-600 hover:bg-gray-100 rounded-lg font-medium transition">Cancelar</button>
+                            <button onclick="startEvaluation()" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition shadow-md">Iniciar Corecheck</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VISTA: QUIZ -->
+            <div id="view-quiz" class="view">
+                <div class="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 sm:p-10 relative">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 border-b border-gray-100 pb-4">
+                        <div class="mb-4 sm:mb-0">
+                            <h2 class="text-xl font-bold text-slate-800 flex items-center" id="quiz-company-name">A avaliar: Empresa</h2>
+                            <p class="text-sm text-gray-500 mt-1">Avaliador Responsável: <span id="quiz-evaluator-name" class="font-medium text-gray-700"></span></p>
+                        </div>
+                        <button onclick="navigate('evaluations')" class="text-blue-600 bg-blue-50 hover:bg-blue-100 px-4 py-2 rounded-lg text-sm font-medium transition">Gravar Progresso e Sair</button>
+                    </div>
+
+                    <div class="mb-8">
+                        <div class="flex justify-between text-sm font-semibold text-slate-600 mb-2">
+                            <span id="quiz-progress-text">Indicador 1 de X</span>
+                            <span id="quiz-progress-percent">0% Concluído</span>
+                        </div>
+                        <div class="w-full bg-slate-100 rounded-full h-2.5">
+                            <div id="quiz-progress-bar" class="bg-gradient-to-r from-blue-500 to-blue-600 h-2.5 rounded-full transition-all duration-500 ease-out" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <div class="mb-6">
+                        <span id="quiz-category" class="inline-block bg-slate-800 text-white text-xs px-3 py-1.5 rounded-lg font-semibold mb-4 tracking-wide uppercase shadow-sm">Categoria</span>
+                        <h3 id="quiz-question" class="text-xl sm:text-2xl font-bold text-slate-800 leading-snug">Texto da pergunta vai aqui?</h3>
+                    </div>
+
+                    <div id="quiz-options" class="space-y-3 mb-6"></div>
+
+                    <div id="quiz-extra-container" class="hidden mb-8 p-5 rounded-xl border">
+                        <label id="quiz-extra-label" class="block text-sm font-bold mb-2"></label>
+                        <textarea id="quiz-extra-input" rows="3" class="w-full border-gray-300 rounded-lg p-3 text-sm border outline-none resize-none focus:ring-2" placeholder="Descreva os detalhes..."></textarea>
+                    </div>
+
+                    <div class="flex justify-between items-center border-t border-gray-100 pt-6">
+                        <button id="quiz-btn-prev" onclick="quizPrev()" class="text-slate-500 hover:text-slate-800 bg-slate-50 hover:bg-slate-100 font-medium px-6 py-2.5 rounded-lg transition disabled:opacity-30 disabled:cursor-not-allowed">&larr; Anterior</button>
+                        <button id="quiz-btn-next" onclick="quizNext()" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 px-8 rounded-lg transition shadow-md disabled:opacity-50 disabled:cursor-not-allowed">Próximo &rarr;</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VISTA: RELATÓRIO FINAL -->
+            <div id="view-report" class="view print-shadow-none">
+                <div class="flex justify-between items-center mb-6 print-hidden">
+                    <button onclick="navigate('evaluations')" class="text-slate-600 hover:text-slate-900 font-medium flex items-center">&larr; Voltar às Avaliações</button>
+                    <button onclick="window.print()" class="bg-slate-800 hover:bg-slate-900 text-white px-5 py-2.5 rounded-lg font-medium transition shadow-md flex items-center">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                        Imprimir / Exportar PDF
+                    </button>
+                </div>
+
+                <div class="bg-white rounded-2xl shadow-xl border border-gray-200 p-8 sm:p-10 print-shadow-none print-mt-0">
+                    <div class="border-b-2 border-slate-900 pb-6 mb-8 flex justify-between items-end">
+                        <div>
+                            <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight">Maturity Corecheck Report</h1>
+                            <p class="text-slate-500 mt-2 font-medium" id="report-company-info">Cliente: --- | Setor: --- | Data: ---</p>
+                        </div>
+                        <div class="text-right hidden sm:block">
+                            <div class="text-sm font-bold text-gray-400 uppercase tracking-widest mb-1">SCORE GLOBAL</div>
+                            <div class="text-5xl font-black text-blue-600" id="report-score-top">0.0</div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10 print-break-inside-avoid">
+                        <!-- Gráfico de Radar -->
+                        <div class="bg-slate-50 rounded-xl p-6 border border-slate-200 flex flex-col items-center">
+                            <h3 class="text-sm font-bold text-slate-500 uppercase tracking-wider w-full text-left mb-4">Mapeamento de Dimensões</h3>
+                            <div class="w-full max-w-sm relative" style="height: 300px;"><canvas id="radarChart"></canvas></div>
+                        </div>
+
+                        <!-- Análise Estratégica -->
+                        <div class="flex flex-col space-y-6">
+                            <div class="bg-white border rounded-xl p-6 shadow-sm border-l-4" id="report-level-box">
+                                <h3 class="text-sm font-bold text-gray-500 uppercase tracking-wider mb-2">Classificação de Maturidade</h3>
+                                <div class="text-2xl font-bold text-slate-800 mb-2" id="report-badge">Nível: ---</div>
+                                <p class="text-sm text-gray-600 leading-relaxed" id="report-desc">---</p>
+                            </div>
+
+                            <div class="bg-slate-900 text-white rounded-xl p-6 shadow-md">
+                                <div class="flex items-center mb-3">
+                                    <svg class="w-5 h-5 text-blue-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
+                                    <h3 class="text-sm font-bold uppercase tracking-wider text-blue-300">Análise de Risco Operacional</h3>
+                                </div>
+                                <p class="text-sm leading-relaxed" id="report-roi-text">Calculando impacto...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sumário Executivo (IA) -->
+                    <div id="report-ai-summary-box" class="hidden bg-gradient-to-br from-indigo-50 to-blue-50 border border-indigo-200 rounded-xl p-6 mb-8 print-break-inside-avoid shadow-sm relative overflow-hidden">
+                        <div class="absolute top-0 right-0 bg-indigo-600 text-white text-xs px-3 py-1 font-bold rounded-bl-lg flex items-center">
+                            <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a1 1 0 011 1v1.323l3.954 1.582 1.599-.8a1 1 0 01.894 1.79l-1.233.616 1.738 5.42a1 1 0 01-.285 1.05A3.989 3.989 0 0115 15a3.989 3.989 0 01-2.667-1.019 1 1 0 01-.285-1.05l1.715-5.349L11 6.477V16h2a1 1 0 110 2H7a1 1 0 110-2h2V6.477L6.237 7.582l1.715 5.349a1 1 0 01-.285 1.05A3.989 3.989 0 015 15a3.989 3.989 0 01-2.667-1.019 1 1 0 01-.285-1.05l1.738-5.42-1.233-.617a1 1 0 01.894-1.788l1.599.799L9 4.323V3a1 1 0 011-1z"/></svg>
+                            Gerado por IA (Gemini)
+                        </div>
+                        <h3 class="text-sm font-bold text-indigo-800 uppercase tracking-wider mb-3">Sumário Executivo</h3>
+                        <p class="text-sm text-slate-800 leading-relaxed" id="report-ai-summary">---</p>
+                    </div>
+
+                    <!-- Insights Setoriais -->
+                    <div class="bg-blue-50 border border-blue-200 rounded-xl p-6 mb-10 print-break-inside-avoid shadow-sm relative overflow-hidden">
+                        <div class="absolute top-0 right-0 bg-blue-600 text-white text-xs px-3 py-1 font-bold rounded-bl-lg">Insight Consultivo</div>
+                        <h3 class="text-sm font-bold text-blue-800 uppercase tracking-wider mb-3 flex items-center">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
+                            Análise Estratégica para o Setor: <span id="report-industry-name" class="ml-1 text-blue-600">---</span>
+                        </h3>
+                        <p class="text-sm text-blue-900 leading-relaxed font-medium" id="report-industry-insight">---</p>
+                    </div>
+
+                    <!-- Plano de Ação Estratégico -->
+                    <div class="mb-10">
+                        <div class="flex justify-between items-end mb-6 border-b-2 border-gray-100 pb-2">
+                            <h3 class="text-xl font-bold text-slate-800">Plano de Ação Tático</h3>
+                            <span id="report-plan-badge" class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded border border-blue-100 hidden sm:block">Prioridades Estratégicas</span>
+                        </div>
+                        <p class="text-sm text-gray-500 mb-4">Vulnerabilidades (notas abaixo de 3) classificadas pela IA quanto a Impacto e Esforço, com recomendação consultiva personalizada.</p>
+                        
+                        <div class="overflow-x-auto bg-white rounded-xl border border-gray-200 shadow-sm">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-slate-50">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Domínio / Categoria</th>
+                                        <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Vulnerabilidade & Recomendação</th>
+                                        <th class="px-4 py-3 text-center text-xs font-bold text-gray-500 uppercase">Impacto</th>
+                                        <th class="px-4 py-3 text-center text-xs font-bold text-gray-500 uppercase">Esforço</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="report-action-plan" class="divide-y divide-gray-100"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Matriz Impacto x Esforço -->
+                    <div class="mb-10 print-break-inside-avoid" id="report-matrix-wrapper">
+                        <div class="flex justify-between items-end mb-6 border-b-2 border-gray-100 pb-2">
+                            <h3 class="text-xl font-bold text-slate-800">Matriz de Priorização (Impacto × Esforço)</h3>
+                            <span class="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded border border-indigo-100 hidden sm:block">Classificação IA</span>
+                        </div>
+                        <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4" style="height: 420px;">
+                            <canvas id="matrixChart"></canvas>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-3 italic">Quadrante superior-esquerdo (Alto Impacto × Baixo Esforço) = <strong>Quick Wins</strong>. Quadrante superior-direito = <strong>Projetos Estratégicos</strong>. Prioridade conforme cor do ponto.</p>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        /* ==========================================
+           1. BANCO DE QUESTÕES BASE
+           ========================================== */
+        const defaultQuestions = [
+            // ITSM E OPERAÇÕES
+            { category: "Gestão de Serviços e Operações", text: "1. Gestão de Mudanças: Existe um processo formal para mudanças em produção (CAB, análise de impacto, plano de rollback)?",
+              options: [
+                  { value: 0, text: "Não existe controle. Mudanças são feitas diretamente em produção sem aviso." },
+                  { value: 1, text: "Existe comunicação informal, mas sem análise estruturada de impacto ou rollback." },
+                  { value: 2, text: "Processo definido, com aprovação gerencial, mas o rollback raramente é planejado." },
+                  { value: 3, text: "CAB estabelecido. Análise de impacto e planos de rollback são obrigatórios." },
+                  { value: 4, text: "Processo automatizado (CI/CD) com validação de impacto e rollback automático." }
+              ]},
+            { category: "Gestão de Serviços e Operações", text: "2. Catálogo de Serviços: A TI possui um catálogo de serviços claro, com prazos e responsabilidades definidos e acessíveis?",
+              options: [
+                  { value: 0, text: "Não há catálogo. Solicitações são feitas via WhatsApp, e-mail ou telefone." },
+                  { value: 1, text: "Existe uma lista informal, mas os prazos e responsáveis não são claros." },
+                  { value: 2, text: "Catálogo básico em uso pela TI, mas pouco divulgado ou utilizado pelo negócio." },
+                  { value: 3, text: "Catálogo estruturado, acessível ao usuário, com SLAs e responsáveis definidos." },
+                  { value: 4, text: "Portal de autoatendimento avançado com fluxos de aprovação e provisionamento automáticos." }
+              ]},
+            { category: "Gestão de Serviços e Operações", text: "3. Gestão de Incidentes: Existe uma ferramenta de chamados com categorização, priorização e base de conhecimento?",
+              options: [
+                  { value: 0, text: "Não há ferramenta de chamados. Tudo é resolvido na base do esforço sem registro." },
+                  { value: 1, text: "Temos uma ferramenta, mas sem categorização adequada ou base de conhecimento." },
+                  { value: 2, text: "Ferramenta em uso com priorização básica, mas a base de conhecimento é fraca." },
+                  { value: 3, text: "Processo estruturado (ITIL), SLA medido e base de conhecimento alimentada regularmente." },
+                  { value: 4, text: "Resolução proativa, automação de incidentes conhecidos (AIOps) e base de conhecimento madura." }
+              ]},
+            { category: "Gestão de Serviços e Operações", text: "4. Backup e DR: O Plano de Recuperação de Desastres (DRP) é testado integralmente pelo menos uma vez ao ano?",
+              options: [
+                  { value: 0, text: "Não há rotina formal de backup ou plano de desastres." },
+                  { value: 1, text: "Fazemos backup, mas nunca testamos um plano de recuperação de desastres." },
+                  { value: 2, text: "Temos um DRP documentado, mas os testes são raros ou apenas teóricos." },
+                  { value: 3, text: "O DRP é testado com sucesso pelo menos uma vez ao ano para sistemas críticos." },
+                  { value: 4, text: "Testes automatizados contínuos de DR com RTO e RPO próximos a zero (Alta Disponibilidade)." }
+              ]},
+            { category: "Gestão de Serviços e Operações", text: "5. Gestão de Ativos (CMDB): Há um inventário automatizado de hardware e software que identifique riscos de licenciamento?",
+              options: [
+                  { value: 0, text: "Não há inventário confiável. Dependemos de planilhas manuais desatualizadas." },
+                  { value: 1, text: "Temos controle de hardware básico, mas software e licenças são negligenciados." },
+                  { value: 2, text: "Inventário atualizado periodicamente, mas de forma semi-manual." },
+                  { value: 3, text: "Ferramenta automatizada descobre ativos na rede e controla licenças." },
+                  { value: 4, text: "CMDB integrado dinamicamente a processos de mudança, incidentes e gestão financeira." }
+              ]},
+            { category: "Gestão de Serviços e Operações", text: "6. Monitoramento: A TI é avisada de falhas por sistemas proativos antes que o usuário reclame?",
+              options: [
+                  { value: 0, text: "Totalmente reativo. Só sabemos que caiu quando o usuário liga." },
+                  { value: 1, text: "Monitoramento básico de ping/link, mas falhas de sistema passam despercebidas." },
+                  { value: 2, text: "Monitoramento de infra e serviços, com alertas via e-mail/painel para a equipe." },
+                  { value: 3, text: "Monitoramento abrangente da experiência do usuário (APM) e alertas integrados." },
+                  { value: 4, text: "Monitoramento preditivo e auto-remediação (scripts resolvem o problema sozinhos)." }
+              ]},
+
+            // INFRAESTRUTURA E CLOUD
+            { category: "Infraestrutura e Automação", text: "7. Patch Management: As atualizações e correções são aplicadas de forma centralizada e automatizada?",
+              options: [
+                  { value: 0, text: "Não há controle. Depende de cada usuário ou equipamento atualizar." },
+                  { value: 1, text: "Atualizações são feitas manualmente quando há tempo ou problema." },
+                  { value: 2, text: "Existe política e ferramenta (ex: WSUS), mas aplicada de forma irregular." },
+                  { value: 3, text: "Rotina automatizada e centralizada de patches com janelas de manutenção regulares." },
+                  { value: 4, text: "Gestão de vulnerabilidades integrada, patching 100% automatizado e auditado." }
+              ]},
+            { category: "Infraestrutura e Automação", text: "8. Provisionamento: A criação de ambientes ou usuários é feita via automação ou segue um fluxo manual?",
+              options: [
+                  { value: 0, text: "100% manual. Exige configuração máquina a máquina, sistema a sistema." },
+                  { value: 1, text: "Uso de imagens clonadas ou scripts simples, mas ainda muito dependente de humanos." },
+                  { value: 2, text: "Provisionamento de usuários (AD/IAM) é razoavelmente automatizado." },
+                  { value: 3, text: "Uso de automação padrão (ex: Ansible, Terraform básico) para infra e acessos." },
+                  { value: 4, text: "Infraestrutura como Código (IaC) ponta a ponta. Zero intervenção manual." }
+              ]},
+            { category: "Infraestrutura e Automação", text: "9. Cloud e Escalabilidade: A infraestrutura permite escalar recursos sob demanda (elástica)?",
+              options: [
+                  { value: 0, text: "Ambiente 100% físico e estático. Compras de hardware demoram meses." },
+                  { value: 1, text: "Virtualização local, mas sem capacidade de crescer dinamicamente." },
+                  { value: 2, text: "Uso de Cloud (IaaS) apenas como data center virtual, sem elasticidade real." },
+                  { value: 3, text: "Arquitetura híbrida/Cloud com capacidade de escalar recursos rapidamente sob demanda." },
+                  { value: 4, text: "Arquitetura Cloud-Native, microsserviços e auto-scaling 100% elástico." }
+              ]},
+
+            // NEGÓCIOS E QUALIDADE
+            { category: "Estratégia e Negócios", text: "10. SLAs Contratuais: Existem acordos de nível de serviço (SLA) formalizados com o negócio e relatórios mensais?",
+              options: [
+                  { value: 0, text: "Não existem SLAs ou metas de tempo de atendimento." },
+                  { value: 1, text: "SLAs informais apenas dentro da TI, desconhecidos pelo negócio." },
+                  { value: 2, text: "SLAs definidos na ferramenta, mas não reportados ou discutidos com o negócio." },
+                  { value: 3, text: "SLAs formalizados, medidos e discutidos mensalmente com as áreas." },
+                  { value: 4, text: "Foco em XLAs (Experience Level Agreements) medindo o impacto real no negócio." }
+              ]},
+            { category: "Estratégia e Negócios", text: "11. Indicadores de Performance: O desempenho é medido por KPIs técnicos e de negócio (Custo, Retenção)?",
+              options: [
+                  { value: 0, text: "Nenhum indicador de performance é medido." },
+                  { value: 1, text: "Mede-se apenas volume de chamados e tempo básico." },
+                  { value: 2, text: "Indicadores técnicos (Uptime, MTTR) acompanhados internamente." },
+                  { value: 3, text: "Dashboards unem KPIs técnicos com impacto operacional (ex: paradas vs receita)." },
+                  { value: 4, text: "Visibilidade em tempo real de KPIs técnicos e de negócio direcionando as decisões." }
+              ]},
+            { category: "Estratégia e Negócios", text: "12. Experiência do Usuário: Existe medição estruturada de satisfação (CSAT ou NPS) após interações com a TI?",
+              options: [
+                  { value: 0, text: "Não medimos a satisfação do usuário." },
+                  { value: 1, text: "Avaliação esporádica ou informal (boca a boca)." },
+                  { value: 2, text: "Pesquisa de CSAT ativada no fechamento de chamados, mas baixa adesão/análise." },
+                  { value: 3, text: "CSAT/NPS monitorado ativamente. Respostas negativas geram ações de correção." },
+                  { value: 4, text: "Cultura focada na experiência. O feedback impulsiona o design de novos serviços." }
+              ]},
+            { category: "Estratégia e Negócios", text: "13. Débito Técnico: Há orçamento e cronograma para a modernização de sistemas legados?",
+              options: [
+                  { value: 0, text: "Não se fala em débito técnico. Sistemas antigos são mantidos 'até quebrarem'." },
+                  { value: 1, text: "A TI reconhece o problema, mas o negócio não aprova verba para modernizar." },
+                  { value: 2, text: "Existem iniciativas isoladas de modernização quando um sistema se torna crítico." },
+                  { value: 3, text: "Orçamento e roadmap anuais dedicados à redução metódica do débito técnico." },
+                  { value: 4, text: "Débito técnico é gerido no backlog das equipes ágeis, com refatoração contínua." }
+              ]},
+            { category: "Estratégia e Negócios", text: "14. Planejamento Financeiro: O orçamento de TI é discutido como investimento ou apenas como custo?",
+              options: [
+                  { value: 0, text: "TI é vista estritamente como centro de despesa a ser cortado." },
+                  { value: 1, text: "Orçamento focado apenas em manter as luzes acesas (Opex e licenças base)." },
+                  { value: 2, text: "Existe verba para projetos de negócio, mas a TI tem pouco poder estratégico." },
+                  { value: 3, text: "TI atua com gestão de portfólio. Projetos têm ROI/TCO calculados e aprovados." },
+                  { value: 4, text: "TI é parceira de receita. FinOps maduro e orçamento orientado a produtos/valor." }
+              ]},
+            { category: "Estratégia e Negócios", text: "15. Tomada de Decisão: As prioridades de TI são definidas com base em dados ou por quem 'grita mais alto'?",
+              options: [
+                  { value: 0, text: "Prioridade é definida pela pressão política ou 'quem grita mais alto'." },
+                  { value: 1, text: "Reuniões subjetivas decidem o roadmap sem critérios claros." },
+                  { value: 2, text: "Existe um comitê de TI, mas as decisões carecem de embasamento em dados concretos." },
+                  { value: 3, text: "Matrizes de priorização (Valor x Esforço) e dados guiam o portfólio de projetos." },
+                  { value: 4, text: "Governança ágil de portfólio. Decisões 100% data-driven e alinhadas aos OKRs corporativos." }
+              ]},
+
+            // DADOS E SEGURANÇA
+            { category: "Arquitetura e Segurança", text: "16. Arquitetura de Dados: Existe uma visão única dos dados ou eles vivem em silos?",
+              options: [
+                  { value: 0, text: "Silos totais. Dados duplicados e conflitantes espalhados em planilhas." },
+                  { value: 1, text: "Sistemas fechados com integrações manuais pontuais (arquivos TXT/CSV)." },
+                  { value: 2, text: "Data Warehouse ou banco centralizado básico, mas integrações são difíceis." },
+                  { value: 3, text: "Arquitetura de integração madura (APIs) e governança de dados estabelecida." },
+                  { value: 4, text: "Data Lake/Mesh moderno, dados democratizados, confiáveis e explorados via IA/Analytics." }
+              ]},
+            { category: "Arquitetura e Segurança", text: "17. Agilidade: A TI utiliza metodologias ágeis para entregas incrementais e ciclos curtos?",
+              options: [
+                  { value: 0, text: "Nenhuma metodologia. Projetos são caóticos." },
+                  { value: 1, text: "Modelo cascata tradicional, projetos demoram meses para gerar valor." },
+                  { value: 2, text: "Algumas equipes tentam usar Scrum/Kanban, mas falta cultura ágil no negócio." },
+                  { value: 3, text: "Metodologias ágeis consolidadas na TI, com entregas frequentes de valor." },
+                  { value: 4, text: "Agilidade em escala organizacional (Business Agility). TI e Negócio no mesmo fluxo." }
+              ]},
+            { category: "Arquitetura e Segurança", text: "18. Cibersegurança: A empresa adota princípios Zero Trust e possui EDR/XDR?",
+              options: [
+                  { value: 0, text: "Contamos apenas com antivírus gratuito/básico e firewall de operadora." },
+                  { value: 1, text: "Firewall corporativo e antivírus gerenciado, mas foco apenas em perímetro." },
+                  { value: 2, text: "Acesso remoto seguro (VPN) e proteção endpoint ativa, sem monitoramento contínuo." },
+                  { value: 3, text: "Ferramentas EDR/XDR, testes de intrusão anuais e monitoramento SOC." },
+                  { value: 4, text: "Arquitetura Zero Trust madura, SOC 24/7 e resposta automática a ameaças." }
+              ]},
+            { category: "Arquitetura e Segurança", text: "19. Privacidade e LGPD: Existem controles de privacidade de dados (Privacy by Design) implementados?",
+              options: [
+                  { value: 0, text: "Nenhuma adequação à LGPD ou preocupação com privacidade." },
+                  { value: 1, text: "Apenas políticas de papel (Termos de Uso), sem controles técnicos de proteção." },
+                  { value: 2, text: "Mapeamento de dados realizado, mas a segurança em novos projetos é reativa." },
+                  { value: 3, text: "Privacy by Design exigido em projetos. Dados sensíveis são mascarados/criptografados." },
+                  { value: 4, text: "Governança de privacidade automatizada, auditorias regulares e cultura de proteção de dados." }
+              ]},
+            { category: "Arquitetura e Segurança", text: "20. Matriz de Riscos: Existe um registro dinâmico de riscos de TI com planos de mitigação?",
+              options: [
+                  { value: 0, text: "Riscos são ignorados até que um desastre aconteça." },
+                  { value: 1, text: "Temos noção dos riscos, mas nada está documentado ou gerenciado." },
+                  { value: 2, text: "Uma matriz de riscos foi criada em auditoria passada, mas não é atualizada." },
+                  { value: 3, text: "Registro dinâmico de riscos operacionais/cibernéticos com donos e ações de mitigação." },
+                  { value: 4, text: "Gestão de riscos integrada ao compliance corporativo (GRC) e revisada em tempo real." }
+              ]},
+
+            // PESSOAS E INOVAÇÃO
+            { category: "Cultura e Inovação", text: "21. Gestão de Terceiros: Os contratos com fornecedores possuem cláusulas de desempenho e auditoria?",
+              options: [
+                  { value: 0, text: "Contratos básicos, baseados em horas/esforço sem garantias de entrega." },
+                  { value: 1, text: "Temos fornecedores críticos, mas a gestão do contrato é puramente financeira." },
+                  { value: 2, text: "Existem SLAs em contrato, mas a TI não cobra ou audita o cumprimento regularmente." },
+                  { value: 3, text: "Gestão ativa de fornecedores, reuniões de performance mensais e multas aplicáveis." },
+                  { value: 4, text: "Parcerias estratégicas (Vendor Management), auditorias técnicas e co-inovação." }
+              ]},
+            { category: "Cultura e Inovação", text: "22. Retenção de Talentos: Existe um plano de carreira e treinamentos para evitar depender de 'heróis'?",
+              options: [
+                  { value: 0, text: "Alta rotatividade. Sem plano de carreira e dependência letal de 1 ou 2 pessoas." },
+                  { value: 1, text: "Treinamentos esporádicos, mas conhecimento crítico segue concentrado em poucos." },
+                  { value: 2, text: "Existe incentivo para cursos, mas sem estrutura de mentoria ou sucessão clara." },
+                  { value: 3, text: "Plano de carreira técnico estabelecido, verba de treinamento e documentação exigida." },
+                  { value: 4, text: "Cultura de aprendizado contínuo, pair-programming, retenção alta e zero 'heróis' exclusivos." }
+              ]},
+            { category: "Cultura e Inovação", text: "23. Cultura de Post-Mortem: Quando falha, o foco é na correção do processo ou na busca por culpados?",
+              options: [
+                  { value: 0, text: "Cultura de medo. Busca-se o culpado para punir ou demitir." },
+                  { value: 1, text: "O problema é consertado rapidamente para 'esconder' a falha da diretoria." },
+                  { value: 2, text: "Faz-se uma reunião, mas a conclusão costuma ser 'erro humano' sem melhorar o sistema." },
+                  { value: 3, text: "Reuniões estruturadas de lições aprendidas geram tarefas de melhoria preventiva." },
+                  { value: 4, text: "Cultura 'Blame-free' (SRE). Falhas geram aprendizado sistêmico e automações de prevenção." }
+              ]},
+            { category: "Cultura e Inovação", text: "24. Inovação Aberta: A TI possui tempo/orçamento dedicado para testar novas tecnologias (PoCs)?",
+              options: [
+                  { value: 0, text: "Zero tempo para inovação. 100% da equipe apagando incêndios operacionais." },
+                  { value: 1, text: "Inovação acontece apenas no tempo livre ou como esforço pessoal de entusiastas." },
+                  { value: 2, text: "Algumas tecnologias são testadas, mas sem orçamento oficial ou metodologia." },
+                  { value: 3, text: "Orçamento e tempo dedicados para Provas de Conceito (PoCs) alinhadas ao negócio." },
+                  { value: 4, text: "Laboratório de inovação/Hackathons institucionalizados, cocriando o futuro do negócio." }
+              ]},
+            { category: "Cultura e Inovação", text: "25. Colaboração (DevOps): As equipes de desenvolvimento e operações trabalham integradas?",
+              options: [
+                  { value: 0, text: "Muros gigantes. Dev cria o problema, Ops que se vire para rodar." },
+                  { value: 1, text: "Passagem de bastão por tickets pesados, muita burocracia e atrito." },
+                  { value: 2, text: "Algumas automações facilitam o deploy, mas os times ainda têm metas conflitantes." },
+                  { value: 3, text: "Práticas DevOps implementadas. Times colaboram ativamente em automação (CI/CD)." },
+                  { value: 4, text: "Cultura DevOps/DevSecOps madura. Times de produto end-to-end com responsabilidade compartilhada." }
+              ]}
+        ];
+
+        const maturityLevels = [
+            { max: 0.8, name: "Nível 1 - Inicial", color: "text-red-600 bg-red-100 border-red-200", border: "border-l-red-500", desc: "Ambiente reativo e caótico. Ausência de processos formais gera alto risco ao negócio." },
+            { max: 1.6, name: "Nível 2 - Repetível", color: "text-orange-600 bg-orange-100 border-orange-200", border: "border-l-orange-500", desc: "Processos básicos existem, mas a dependência manual é altíssima. A organização sofre sob stress." },
+            { max: 2.4, name: "Nível 3 - Definido", color: "text-yellow-600 bg-yellow-100 border-yellow-200", border: "border-l-yellow-500", desc: "Processos padronizados. A TI atende bem as demandas do negócio e possui governança básica." },
+            { max: 3.2, name: "Nível 4 - Gerenciado", color: "text-emerald-600 bg-emerald-100 border-emerald-200", border: "border-l-emerald-500", desc: "Gestão por métricas e automação. A TI é considerada uma parceira estratégica de qualidade." },
+            { max: 4.0, name: "Nível 5 - Otimizado", color: "text-blue-600 bg-blue-100 border-blue-200", border: "border-l-blue-500", desc: "Melhoria contínua institucionalizada. TI ágil, segura e alinhada à geração de inovação." }
+        ];
+
+        // Lógicas Estáticas e Heurísticas
+        const industryInsights = {
+            Financeiro: "No Setor Financeiro, a prioridade máxima é a conformidade regulatória e a resiliência cibernética. A adoção de Zero Trust e DevSecOps é o padrão ouro estabelecido para mitigar riscos inerentes à operação.",
+            Varejo: "Para o Retalho e E-commerce, a TI atua como o pilar central da Experiência do Cliente. A automatização do provisionamento e uma monitorização de performance apurada (APM) são cruciais, especialmente em picos de procura.",
+            Tecnologia: "No segmento de Tecnologia e SaaS, a agilidade define a sobrevivência da empresa. A métrica vital é a velocidade de entrega de valor, sendo fortemente recomendada uma cultura DevOps integrada em toda a operação.",
+            Saúde: "No setor de Saúde, a confidencialidade e a integridade dos dados dos pacientes são essenciais (LGPD). O foco primário e imediato deve estar na blindagem e gestão avançada de acessos.",
+            Indústria: "Na Indústria e Manufatura, a convergência de TI com as Operações de Chão de Fábrica (OT) exige uma arquitetura de redes altamente disponível e segmentada, para prevenir tempos de paragem dispendiosos.",
+            Serviços: "Em Serviços Gerais, a eficiência operacional está intimamente ligada ao Catálogo de Serviços. A adoção contínua de metodologias ágeis e ITIL reduz os estrangulamentos e incrementa os resultados da equipa."
+        };
+
+        const categoryHeuristics = {
+            "Gestão de Serviços e Operações": { impact: "Alto", effort: "Médio" },
+            "Infraestrutura e Automação": { impact: "Alto", effort: "Alto" },
+            "Arquitetura e Segurança": { impact: "Altíssimo", effort: "Médio" },
+            "Estratégia e Negócios": { impact: "Alto", effort: "Médio" },
+            "Cultura e Inovação": { impact: "Médio", effort: "Alto" }
+        };
+
+        /* ==========================================
+           2. ESTADO GLOBAL E BASE DE DADOS LOCAL
+           ========================================== */
+        let db = { users: [], companies: [], questions: [], evaluations: [] };
+        let currentUser = null;
+        let activeEvalObj = null;
+        let radarChartInstance = null;
+        let matrixChartInstance = null;
+
+        /* ==========================================
+           2.1 CLIENTE GEMINI AI
+           ========================================== */
+        // Chave API Gemini embutida para uso interno. Trocar aqui quando necessário.
+        const GEMINI_API_KEY = 'AIzaSyDoSgGHl3LVm4WPr7wAvScL8fXS1m85JI0';
+        const GEMINI_PRIMARY_MODEL = 'gemini-2.5-flash';
+        const GEMINI_FALLBACK_MODEL = 'gemini-flash-latest';
+        // Cadeia de modelos de fallback (ordem de tentativa quando o anterior falhar com 503/404)
+        const GEMINI_MODEL_CHAIN = ['gemini-2.5-flash', 'gemini-flash-latest', 'gemini-2.0-flash', 'gemini-2.5-flash-lite'];
+
+        function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+        async function callGemini(prompt, { model = GEMINI_PRIMARY_MODEL, responseJson = true, maxTokens = 8192, _attempt = 0, _modelIdx = 0 } = {}) {
+            const key = getGeminiKey();
+            if (!key) throw new Error('API_KEY_MISSING');
+
+            const body = {
+                contents: [{ role: 'user', parts: [{ text: prompt }] }],
+                generationConfig: {
+                    temperature: 0.3,
+                    topP: 0.9,
+                    maxOutputTokens: maxTokens,
+                    ...(responseJson ? { responseMimeType: 'application/json' } : {})
+                }
+            };
+
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(key)}`;
+            const modelLabel = document.getElementById('ai-loading-model');
+            const stepLabel = document.getElementById('ai-loading-step');
+            if (modelLabel) modelLabel.textContent = model + (_attempt > 0 ? ' (tentativa ' + (_attempt + 1) + ')' : '');
+
+            let resp;
+            try {
+                resp = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+            } catch (netErr) {
+                // Rede: tenta de novo 2x com backoff
+                if (_attempt < 2) {
+                    const wait = 1500 * Math.pow(2, _attempt);
+                    if (stepLabel) stepLabel.textContent = 'Rede instável, tentando novamente em ' + Math.round(wait/1000) + 's...';
+                    await sleep(wait);
+                    return callGemini(prompt, { model, responseJson, maxTokens, _attempt: _attempt + 1, _modelIdx });
+                }
+                throw new Error('NETWORK_ERROR: ' + netErr.message);
+            }
+
+            if (!resp.ok) {
+                const errText = await resp.text().catch(() => '');
+                const status = resp.status;
+                const transient = (status === 429 || status === 500 || status === 502 || status === 503 || status === 504);
+
+                // 1) Erros transitórios: até 3 tentativas com backoff exponencial
+                if (transient && _attempt < 3) {
+                    const wait = 2000 * Math.pow(2, _attempt); // 2s, 4s, 8s
+                    console.warn('Gemini ' + status + ' (tentativa ' + (_attempt + 1) + '). Aguardando ' + wait + 'ms...');
+                    if (stepLabel) stepLabel.textContent = 'IA com alta demanda. Nova tentativa em ' + Math.round(wait/1000) + 's...';
+                    await sleep(wait);
+                    return callGemini(prompt, { model, responseJson, maxTokens, _attempt: _attempt + 1, _modelIdx });
+                }
+
+                // 2) Após esgotar, tenta próximo modelo da cadeia (para 503/404/429)
+                const nextIdx = _modelIdx + 1;
+                if ((transient || status === 404) && nextIdx < GEMINI_MODEL_CHAIN.length) {
+                    const nextModel = GEMINI_MODEL_CHAIN[nextIdx];
+                    console.warn('Alternando para modelo alternativo: ' + nextModel);
+                    if (stepLabel) stepLabel.textContent = 'Alternando para modelo ' + nextModel + '...';
+                    return callGemini(prompt, { model: nextModel, responseJson, maxTokens, _attempt: 0, _modelIdx: nextIdx });
+                }
+
+                throw new Error('HTTP ' + status + ': ' + errText.slice(0, 400));
+            }
+
+            const data = await resp.json();
+            const cand = data?.candidates?.[0];
+            const finishReason = cand?.finishReason || '';
+            const text = cand?.content?.parts?.map(p => p.text).join('') || '';
+            if (!text) throw new Error('EMPTY_RESPONSE');
+
+            if (!responseJson) return text;
+
+            // Tentativa 1..4 de parse
+            const parsed = safeParseJson(text);
+            if (parsed.ok) return parsed.value;
+
+            // Retry: pedir para a IA corrigir o JSON
+            console.warn('JSON invalido do Gemini. Tentando reparo via IA...', parsed.error);
+            const el = document.getElementById('ai-loading-step');
+            if (el) el.textContent = 'Reparando resposta da IA...';
+            try {
+                const repairPrompt = 'O texto abaixo deveria ser um JSON valido, mas contem erros de sintaxe (virgulas, aspas, colchetes ou chaves mal fechadas). Retorne APENAS o JSON corrigido, sem markdown, sem comentarios, sem texto explicativo. Preserve todo o conteudo original.\n\n<<<JSON_QUEBRADO>>>\n' + text + '\n<<<FIM>>>';
+                const repaired = await callGeminiRaw(repairPrompt, { model, maxTokens: Math.max(maxTokens, 8192) });
+                const parsed2 = safeParseJson(repaired);
+                if (parsed2.ok) return parsed2.value;
+                throw new Error('INVALID_JSON (apos reparo): ' + (parsed2.error || '').slice(0, 200));
+            } catch (repairErr) {
+                throw new Error('INVALID_JSON: ' + (parsed.error || '').slice(0, 200) + ' | finish=' + finishReason);
+            }
+        }
+
+        // Chamada crua (usada no reparo)
+        async function callGeminiRaw(prompt, { model = GEMINI_PRIMARY_MODEL, maxTokens = 8192 } = {}) {
+            const key = getGeminiKey();
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(key)}`;
+            const resp = await fetch(url, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{ role: 'user', parts: [{ text: prompt }] }],
+                    generationConfig: { temperature: 0.1, maxOutputTokens: maxTokens, responseMimeType: 'application/json' }
+                })
+            });
+            if (!resp.ok) throw new Error('HTTP ' + resp.status + ' no reparo');
+            const data = await resp.json();
+            return data?.candidates?.[0]?.content?.parts?.map(p => p.text).join('') || '';
+        }
+
+        // Parser tolerante
+        function safeParseJson(raw) {
+            if (!raw) return { ok: false, error: 'empty' };
+            let s = String(raw).trim();
+            s = s.replace(/^\s*```(?:json|javascript)?\s*/i, '').replace(/```\s*$/i, '').trim();
+            try { return { ok: true, value: JSON.parse(s) }; } catch (_) {}
+            const first = s.indexOf('{');
+            const last = s.lastIndexOf('}');
+            if (first >= 0 && last > first) {
+                const slice = s.slice(first, last + 1);
+                try { return { ok: true, value: JSON.parse(slice) }; } catch (_) {
+                    const fixed = sanitizeJson(slice);
+                    try { return { ok: true, value: JSON.parse(fixed) }; } catch (e) {
+                        const salvaged = salvageTruncated(s);
+                        if (salvaged) {
+                            try { return { ok: true, value: JSON.parse(salvaged) }; }
+                            catch (e2) { return { ok: false, error: e2.message }; }
+                        }
+                        return { ok: false, error: e.message };
+                    }
+                }
+            }
+            // Caso JSON tenha sido truncado antes do } final
+            const salvaged = salvageTruncated(s);
+            if (salvaged) {
+                try { return { ok: true, value: JSON.parse(salvaged) }; } catch (e) { return { ok: false, error: e.message }; }
+            }
+            return { ok: false, error: 'no_json_braces' };
+        }
+
+        function sanitizeJson(s) {
+            let out = s;
+            // Remove virgulas penduradas antes de ] ou }
+            out = out.replace(/,(\s*[}\]])/g, '$1');
+            // Aspas tipograficas -> aspas normais
+            out = out.replace(/[\u2018\u2019]/g, "'").replace(/[\u201C\u201D]/g, '"');
+            // Escapa quebras de linha soltas dentro de strings
+            out = out.replace(/"((?:[^"\\]|\\.)*)"/g, (m, inner) => {
+                const fixed = inner.replace(/\r?\n/g, '\\n').replace(/\t/g, '\\t');
+                return '"' + fixed + '"';
+            });
+            return out;
+        }
+
+        // Se a resposta foi truncada dentro de plano_acao, corta no ultimo } completo e fecha
+        function salvageTruncated(s) {
+            const idxArr = s.indexOf('"plano_acao"');
+            if (idxArr < 0) return null;
+            const arrStart = s.indexOf('[', idxArr);
+            if (arrStart < 0) return null;
+            let i = arrStart + 1, depth = 0, inStr = false, esc = false, lastClose = -1;
+            for (; i < s.length; i++) {
+                const ch = s[i];
+                if (inStr) {
+                    if (esc) { esc = false; continue; }
+                    if (ch === '\\') { esc = true; continue; }
+                    if (ch === '"') inStr = false;
+                    continue;
+                }
+                if (ch === '"') { inStr = true; continue; }
+                if (ch === '{') depth++;
+                else if (ch === '}') { depth--; if (depth === 0) lastClose = i; }
+                else if (ch === ']' && depth === 0) { return s.slice(0, i + 1) + '}'; }
+            }
+            if (lastClose < 0) return null;
+            return s.slice(0, lastClose + 1) + ']}';
+        }
+
+        function showAiLoading(step, percent) {
+            const ov = document.getElementById('ai-loading-overlay');
+            ov.classList.remove('hidden');
+            ov.classList.add('flex');
+            if (step) document.getElementById('ai-loading-step').textContent = step;
+            if (typeof percent === 'number') document.getElementById('ai-loading-bar').style.width = percent + '%';
+            document.getElementById('ai-loading-model').textContent = GEMINI_PRIMARY_MODEL;
+        }
+
+        function hideAiLoading() {
+            const ov = document.getElementById('ai-loading-overlay');
+            ov.classList.add('hidden');
+            ov.classList.remove('flex');
+        }
+
+        function initDB() {
+            const stored = localStorage.getItem('mc_db_v7_no_ai');
+            if (stored) {
+                db = JSON.parse(stored);
+                if (db.questions.length < 25) db.questions = defaultQuestions.map((q, i) => ({ id: i+1, ...q }));
+            } else {
+                db.users = [
+                    { id: 1, username: 'admin', pass: '123', name: 'Administrador TI', role: 'admin' },
+                    { id: 2, username: 'avaliador', pass: '123', name: 'Consultor Master', role: 'evaluator' }
+                ];
+                db.questions = defaultQuestions.map((q, i) => ({ id: i+1, ...q }));
+            }
+            saveDB();
+        }
+        
+        function saveDB() { 
+            localStorage.setItem('mc_db_v7_no_ai', JSON.stringify(db)); 
+        }
+        
+        function genId() { 
+            return Date.now().toString(36) + Math.random().toString(36).substr(2); 
+        }
+
+        /* ==========================================
+           3. ROUTING (NAVEGAÇÃO)
+           ========================================== */
+        function login() {
+            const u = document.getElementById('login-user').value;
+            const p = document.getElementById('login-pass').value;
+            const user = db.users.find(x => x.username === u && x.pass === p);
+            if (!user) { alert('Credenciais inválidas.'); return; }
+            // IA sempre ativa (chave embutida)
+            const badge = document.getElementById('ai-status-badge');
+            if (badge) { badge.textContent = 'IA Ativa'; badge.className = 'text-xs font-bold bg-emerald-500 text-white px-2 py-0.5 rounded'; }
+            currentUser = user;
+            document.getElementById('main-nav').classList.remove('hidden');
+            document.getElementById('current-user-display').textContent = `${user.name} (${user.role})`;
+            document.getElementById('nav-questions').classList.toggle('hidden', user.role !== 'admin');
+            navigate('dashboard');
+        }
+
+        function getGeminiKey() {
+            // 1) chave embutida (prioridade); 2) override em window; 3) sessionStorage legado
+            return GEMINI_API_KEY || window.GEMINI_API_KEY || sessionStorage.getItem('mc_gemini_key') || '';
+        }
+
+        function _unusedInlineKey() {
+            const newKey = null;
+            if (newKey === null) return;
+            const v = newKey.trim();
+            if (v) {
+                sessionStorage.setItem('mc_gemini_key', v);
+                const badge = document.getElementById('ai-status-badge');
+                if (badge) { badge.textContent = 'IA Ativa'; badge.className = 'text-xs font-bold bg-emerald-500 text-white px-2 py-0.5 rounded'; }
+                alert('Chave atualizada.');
+            } else {
+                sessionStorage.removeItem('mc_gemini_key');
+                const badge = document.getElementById('ai-status-badge');
+                if (badge) { badge.textContent = 'IA Inativa'; badge.className = 'text-xs font-bold bg-slate-500 text-white px-2 py-0.5 rounded'; }
+            }
+        }
+
+        function logout() {
+            currentUser = null;
+            document.getElementById('main-nav').classList.add('hidden');
+            document.getElementById('login-user').value = '';
+            document.getElementById('login-pass').value = '';
+            navigate('login');
+        }
+
+        function navigate(viewId) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.getElementById('view-' + viewId).classList.add('active');
+            
+            if (viewId === 'dashboard') {
+                document.getElementById('dash-companies-count').textContent = db.companies.length;
+                document.getElementById('dash-evaluations-count').textContent = db.evaluations.filter(e => e.status === 'completed').length;
+                document.getElementById('dash-questions-count').textContent = db.questions.length;
+            }
+            if (viewId === 'companies') loadCompanies();
+            if (viewId === 'questions') {
+                document.getElementById('questions-list').innerHTML = db.questions.map((q, i) => `
+                    <div class="mb-4 p-4 border border-gray-100 rounded-lg bg-slate-50">
+                        <div class="font-bold text-gray-800 text-sm mb-2"><span class="text-blue-600">Q${i+1} [${q.category}]</span> ${q.text}</div>
+                        <ul class="text-xs text-gray-600 space-y-1 pl-4 list-disc">
+                            ${q.options.map(o => `<li>Nível ${o.value}: ${o.text}</li>`).join('')}
+                        </ul>
+                    </div>`).join('');
+            }
+            if (viewId === 'evaluations') loadEvaluations();
+        }
+
+        /* ==========================================
+           4. REGISTO DE EMPRESAS E EXCLUSÃO
+           ========================================== */
+        function openCompanyForm() {
+            document.getElementById('comp-name').value = '';
+            document.getElementById('comp-industry').selectedIndex = 0;
+            document.getElementById('comp-cnpj').value = '';
+            document.getElementById('comp-contact').value = '';
+            document.getElementById('form-company').classList.remove('hidden');
+        }
+
+        function loadCompanies() {
+            const tbody = document.getElementById('companies-list');
+            tbody.innerHTML = db.companies.map(c => `
+                <tr>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-slate-800">${c.name}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 capitalize">${c.industry}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${c.contact}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm">
+                        <button onclick="delCompany('${c.id}')" class="text-red-500 hover:text-red-700 font-medium bg-red-50 hover:bg-red-100 transition px-3 py-1 rounded">Excluir</button>
+                    </td>
+                </tr>`).join('');
+                
+            document.getElementById('eval-company-select').innerHTML = db.companies.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+        }
+
+        function saveCompany() {
+            const name = document.getElementById('comp-name').value;
+            if(!name) return alert('Nome obrigatório');
+            db.companies.push({
+                id: genId(), name, industry: document.getElementById('comp-industry').value,
+                cnpj: document.getElementById('comp-cnpj').value, contact: document.getElementById('comp-contact').value
+            });
+            saveDB();
+            document.getElementById('form-company').classList.add('hidden');
+            loadCompanies();
+        }
+
+        function delCompany(id) {
+            if(confirm('Tem a certeza que deseja excluir a empresa e todos os seus relatórios? Esta ação é irreversível.')){
+                db.companies = db.companies.filter(c => c.id !== id);
+                db.evaluations = db.evaluations.filter(e => e.companyId !== id);
+                saveDB(); 
+                loadCompanies();
+                
+                const dashComp = document.getElementById('dash-companies-count');
+                const dashEval = document.getElementById('dash-evaluations-count');
+                if (dashComp) dashComp.textContent = db.companies.length;
+                if (dashEval) dashEval.textContent = db.evaluations.filter(e => e.status === 'completed').length;
+            }
+        }
+
+        /* ==========================================
+           5. FLUXO DE AVALIAÇÃO E QUIZ
+           ========================================== */
+        function loadEvaluations() {
+            const container = document.getElementById('evaluations-list');
+            container.innerHTML = db.evaluations.length ? db.evaluations.map(e => {
+                const comp = db.companies.find(c => c.id === e.companyId)?.name || 'Empresa Eliminada';
+                const isComp = e.status === 'completed';
+                return `
+                    <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
+                        <div class="flex justify-between items-start mb-3">
+                            <h4 class="font-bold text-lg text-slate-800">${comp}</h4>
+                            <span class="px-2.5 py-1 rounded text-xs font-bold ${isComp ? 'bg-emerald-100 text-emerald-800' : 'bg-orange-100 text-orange-800'}">${isComp ? `Score: ${e.score}` : 'Rascunho'}</span>
+                        </div>
+                        <p class="text-xs text-gray-500 mb-4">Data: ${e.date} | Avaliador: ${e.evaluatorName}</p>
+                        <button onclick="${isComp ? `showReport('${e.id}')` : `resumeEval('${e.id}')`}" class="w-full py-2 rounded-lg text-sm font-bold ${isComp ? 'bg-slate-100 text-slate-700 hover:bg-slate-200' : 'bg-blue-50 text-blue-700 hover:bg-blue-100'} transition">
+                            ${isComp ? 'Ver Relatório' : 'Continuar Diagnóstico'}
+                        </button>
+                    </div>`;
+            }).reverse().join('') : '<p class="text-gray-500 col-span-2">Nenhum diagnóstico iniciado. Adicione um cliente e clique em "Nova Avaliação".</p>';
+        }
+
+        function startEvaluation() {
+            const compId = document.getElementById('eval-company-select').value;
+            if(!compId) return alert('Por favor, registe uma empresa primeiro na secção de Clientes.');
+            
+            const novaAvaliacao = {
+                id: genId(), 
+                companyId: compId, 
+                evaluatorName: currentUser.name, 
+                date: new Date().toLocaleDateString(),
+                status: 'draft', 
+                answers: db.questions.map(q => ({ qId: q.id, val: null, text: '' })), 
+                currIdx: 0
+            };
+            
+            db.evaluations.push(novaAvaliacao); 
+            saveDB();
+            
+            document.getElementById('modal-new-eval').classList.add('hidden');
+            loadEvaluations();
+            resumeEval(novaAvaliacao.id);
+        }
+
+        function resumeEval(id) {
+            activeEvalObj = db.evaluations.find(e => e.id === id);
+            navigate('quiz');
+            document.getElementById('quiz-company-name').textContent = db.companies.find(c => c.id === activeEvalObj.companyId)?.name || 'Empresa';
+            document.getElementById('quiz-evaluator-name').textContent = activeEvalObj.evaluatorName;
+            renderQuiz();
+        }
+
+        function renderQuiz() {
+            const idx = activeEvalObj.currIdx;
+            const q = db.questions[idx];
+            const ans = activeEvalObj.answers[idx];
+            const t = db.questions.length;
+
+            document.getElementById('quiz-category').textContent = q.category;
+            document.getElementById('quiz-question').textContent = q.text;
+            document.getElementById('quiz-progress-text').textContent = `Indicador ${idx + 1} de ${t}`;
+            document.getElementById('quiz-progress-percent').textContent = `${Math.round(((idx)/t)*100)}% Concluído`;
+            document.getElementById('quiz-progress-bar').style.width = `${((idx)/t)*100}%`;
+
+            document.getElementById('quiz-btn-prev').disabled = idx === 0;
+            document.getElementById('quiz-btn-next').innerHTML = (idx === t - 1) ? 'Finalizar Auditoria &#10003;' : 'Próximo &rarr;';
+
+            document.getElementById('quiz-options').innerHTML = q.options.map(opt => {
+                const isS = ans.val === opt.value;
+                return `
+                    <div onclick="selectOpt(${opt.value})" class="option-card border-2 rounded-xl p-4 cursor-pointer flex items-center ${isS ? 'selected' : 'border-gray-200 bg-white'}">
+                        <div class="flex-shrink-0 w-8 h-8 rounded-lg mr-4 flex items-center justify-center font-bold text-sm ${isS ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-500'}">${opt.value}</div>
+                        <div class="text-sm font-medium ${isS ? 'text-blue-900' : 'text-gray-700'}">${opt.text}</div>
+                    </div>`;
+            }).join('');
+
+            const extCont = document.getElementById('quiz-extra-container');
+            const extInp = document.getElementById('quiz-extra-input');
+            const extLbl = document.getElementById('quiz-extra-label');
+            
+            extInp.value = ans.text;
+            extInp.oninput = (e) => { ans.text = e.target.value; saveDB(); checkNext(); };
+
+            if(ans.val !== null) {
+                extCont.classList.remove('hidden');
+                if(ans.val < 3) {
+                    extCont.className = "mb-8 p-5 rounded-xl border border-orange-200 bg-orange-50 transition-all";
+                    extLbl.innerHTML = "🚨 Ação Corretiva Exigida (Obrigatório)";
+                    extInp.placeholder = "O que foi sugerido para mitigar este problema?";
+                } else {
+                    extCont.className = "mb-8 p-5 rounded-xl border border-emerald-200 bg-emerald-50 transition-all";
+                    extLbl.innerHTML = "✅ Registo de Evidência (Obrigatório)";
+                    extInp.placeholder = "Onde está documentado ou implementado isto?";
+                }
+            } else { extCont.classList.add('hidden'); }
+            checkNext();
+        }
+
+        function selectOpt(v) {
+            const ans = activeEvalObj.answers[activeEvalObj.currIdx];
+            if(ans.val !== null && (ans.val < 3) !== (v < 3)) ans.text = ''; 
+            ans.val = v; saveDB(); renderQuiz();
+        }
+
+        function checkNext() {
+            const ans = activeEvalObj.answers[activeEvalObj.currIdx];
+            document.getElementById('quiz-btn-next').disabled = !(ans.val !== null && ans.text.trim().length > 3);
+        }
+
+        function quizNext() {
+            if(activeEvalObj.currIdx < db.questions.length - 1) { 
+                activeEvalObj.currIdx++; saveDB(); renderQuiz(); 
+            } else {
+                processFinalEvaluation();
+            }
+        }
+        
+        function quizPrev() {
+            if(activeEvalObj.currIdx > 0) { activeEvalObj.currIdx--; saveDB(); renderQuiz(); }
+        }
+
+        /* ==========================================
+           6. PROCESSAMENTO E GERAÇÃO DE RESULTADOS (IA INSTANTÂNEA)
+           ========================================== */
+        async function processFinalEvaluation() {
+            activeEvalObj.status = 'completed';
+            const sum = activeEvalObj.answers.reduce((a, c) => a + c.val, 0);
+            const score = (sum / db.questions.length).toFixed(1);
+            activeEvalObj.score = score;
+            activeEvalObj.maturityLevel = maturityLevels.find(m => score <= m.max)?.name || maturityLevels[4].name;
+
+            const comp = db.companies.find(c => c.id === activeEvalObj.companyId) || { name: '---', industry: 'Serviços' };
+            const gaps = activeEvalObj.answers
+                .map(ans => {
+                    const q = db.questions.find(x => x.id === ans.qId);
+                    return { qId: ans.qId, category: q.category, question: q.text, score: ans.val, note: ans.text };
+                })
+                .filter(g => g.score < 3);
+
+            if (getGeminiKey()) {
+                try {
+                    showAiLoading('Enviando respostas para a IA (Gemini)...', 15);
+                    await new Promise(r => setTimeout(r, 150));
+
+                    const prompt = buildDiagnosticPrompt(comp, score, activeEvalObj.maturityLevel, gaps, activeEvalObj.answers);
+                    showAiLoading('Classificando Impacto e Esforço de cada vulnerabilidade...', 45);
+                    const ai = await callGemini(prompt, { responseJson: true });
+                    showAiLoading('Montando relatório consultivo...', 85);
+
+                    activeEvalObj.ai = normalizeAiResult(ai, gaps);
+                    activeEvalObj.aiGeneratedAt = new Date().toISOString();
+                } catch (err) {
+                    console.error('Falha IA:', err);
+                    activeEvalObj.ai = null;
+                    activeEvalObj.aiError = err.message;
+                    hideAiLoading();
+                    alert(friendlyAiError(err));
+                }
+            } else {
+                activeEvalObj.ai = null;
+                activeEvalObj.aiError = 'API_KEY_MISSING';
+            }
+
+            saveDB();
+            hideAiLoading();
+            showReport(activeEvalObj.id);
+        }
+
+        function friendlyAiError(err) {
+            const m = (err && err.message) || '';
+            if (m.includes('API_KEY_MISSING')) return 'Nenhuma chave API Gemini configurada. O relatório será gerado com heurísticas locais. Clique no badge "IA" na barra superior para inserir a chave.';
+            if (m.startsWith('HTTP 400')) return 'Requisição inválida para a API Gemini (400). Verifique a chave e tente novamente.';
+            if (m.startsWith('HTTP 401') || m.startsWith('HTTP 403')) return 'Chave API Gemini inválida ou sem permissão (401/403). Atualize a chave no badge "IA" da barra superior.';
+            if (m.startsWith('HTTP 404')) return 'Modelo Gemini indisponível (404). Foi tentado fallback automático sem sucesso. Confirme se sua chave tem acesso a gemini-2.5-flash.';
+            if (m.startsWith('HTTP 429')) return 'Limite de requisições do Gemini atingido (429). Aguarde e tente novamente.';
+            if (m.includes('NETWORK_ERROR')) return 'Falha de rede ao chamar a API Gemini. Verifique sua conexão.';
+            if (m.includes('INVALID_JSON')) return 'A IA retornou um formato inesperado. Tente finalizar novamente.';
+            return 'Erro ao processar relatório via IA: ' + m;
+        }
+
+        function buildDiagnosticPrompt(company, score, level, gaps, allAnswers) {
+            const gapList = gaps.map((g, i) => ({
+                id: g.qId,
+                categoria: g.category,
+                pergunta: g.question,
+                nota: g.score,
+                acao_corretiva_auditor: g.note || '(não informada)'
+            }));
+
+            const fullAnswers = allAnswers.map(a => {
+                const q = db.questions.find(x => x.id === a.qId);
+                return { categoria: q.category, pergunta: q.text, nota: a.val };
+            });
+
+            return `Você é um consultor sênior de governança de TI (COBIT, ITIL 4, ISO 27001) produzindo um relatório executivo de maturidade.
+
+CONTEXTO DA EMPRESA:
+- Nome: ${company.name}
+- Setor: ${company.industry}
+- Score global obtido: ${score}/4.0
+- Nível de maturidade: ${level}
+
+RESPOSTAS COMPLETAS (25 indicadores):
+${JSON.stringify(fullAnswers, null, 0)}
+
+VULNERABILIDADES IDENTIFICADAS (nota < 3) que exigem plano de ação:
+${JSON.stringify(gapList, null, 0)}
+
+TAREFA: Retorne EXCLUSIVAMENTE um objeto JSON válido (sem markdown, sem comentários) com a seguinte estrutura exata:
+
+{
+  "sumario_executivo": "Parágrafo único (3-5 frases) em português do Brasil, tom consultivo e executivo, destacando o diagnóstico geral, principais riscos e oportunidades para o setor ${company.industry}.",
+  "analise_risco": "Parágrafo curto (2-3 frases) explicando o risco operacional e financeiro associado ao score ${score}.",
+  "insight_setorial": "Parágrafo (2-4 frases) com recomendações específicas para o setor ${company.industry} considerando as vulnerabilidades identificadas.",
+  "plano_acao": [
+    {
+      "id": <número do id da vulnerabilidade>,
+      "categoria": "<categoria original>",
+      "vulnerabilidade": "<resumo objetivo do gap em 1 frase>",
+      "recomendacao": "<recomendação consultiva acionável em 1-2 frases, personalizada para o setor e para a nota atual>",
+      "impacto": "Alto|Médio|Baixo",
+      "esforco": "Alto|Médio|Baixo",
+      "prioridade": "Crítica|Alta|Média|Baixa"
+    }
+  ]
+}
+
+REGRAS OBRIGATÓRIAS (siga à risca para garantir JSON válido):
+1. Inclua EXATAMENTE um item em "plano_acao" para CADA vulnerabilidade listada acima (mesmo id), sem repetir nem inventar novas.
+2. "impacto" e "esforco" devem ser classificados individualmente por item conforme a criticidade, complexidade técnica, dependência de integração e custos típicos do setor ${company.industry}.
+3. "prioridade" segue: Alto Impacto + Baixo Esforço = Crítica (Quick Win); Alto Impacto + Alto Esforço = Alta; Médio Impacto = Média; Baixo Impacto = Baixa.
+4. NUNCA use aspas duplas dentro das strings; se precisar destacar algo, use aspas simples ou remova-as.
+5. NUNCA use quebras de linha reais dentro de strings (sem \\n no meio dos textos).
+6. NUNCA use aspas tipográficas curvas (“ ” ‘ ’). Use apenas aspas retas.
+7. Não inclua markdown, comentários, texto antes ou depois do JSON.
+8. Cada string deve ter no máximo 400 caracteres.
+9. Sempre responda em português do Brasil.`;
+        }
+
+        function normalizeAiResult(ai, gaps) {
+            const allowed = ['Alto', 'Médio', 'Baixo'];
+            const prioridades = ['Crítica', 'Alta', 'Média', 'Baixa'];
+            const norm = {
+                sumario_executivo: (ai.sumario_executivo || '').trim(),
+                analise_risco: (ai.analise_risco || '').trim(),
+                insight_setorial: (ai.insight_setorial || '').trim(),
+                plano_acao: []
+            };
+            const items = Array.isArray(ai.plano_acao) ? ai.plano_acao : [];
+            // indexar por id
+            const byId = {};
+            items.forEach(it => { if (it && it.id != null) byId[it.id] = it; });
+
+            gaps.forEach(g => {
+                const src = byId[g.qId] || {};
+                const impacto = allowed.includes(src.impacto) ? src.impacto : 'Médio';
+                const esforco = allowed.includes(src.esforco) ? src.esforco : 'Médio';
+                let prioridade = prioridades.includes(src.prioridade) ? src.prioridade : null;
+                if (!prioridade) {
+                    if (impacto === 'Alto' && esforco === 'Baixo') prioridade = 'Crítica';
+                    else if (impacto === 'Alto') prioridade = 'Alta';
+                    else if (impacto === 'Médio') prioridade = 'Média';
+                    else prioridade = 'Baixa';
+                }
+                norm.plano_acao.push({
+                    id: g.qId,
+                    categoria: src.categoria || g.category,
+                    vulnerabilidade: (src.vulnerabilidade || g.question).toString().trim(),
+                    recomendacao: (src.recomendacao || g.note || 'Ação corretiva a definir.').toString().trim(),
+                    impacto, esforco, prioridade,
+                    nota_original: g.score,
+                    acao_auditor: g.note || ''
+                });
+            });
+            return norm;
+        }
+
+        /* ==========================================
+           7. RELATÓRIO FINAL E GRÁFICOS
+           ========================================== */
+        function showReport(id) {
+            const e = db.evaluations.find(x => x.id === id);
+            const comp = db.companies.find(c => c.id === e.companyId) || { name: 'Empresa Desconhecida', industry: 'Indefinido' };
+
+            navigate('report');
+            document.getElementById('report-company-info').textContent = `Cliente: ${comp.name} | Setor: ${comp.industry.toUpperCase()} | Data: ${e.date}`;
+            document.getElementById('report-score-top').textContent = e.score;
+
+            const lvl = maturityLevels.find(m => e.score <= m.max) || maturityLevels[4];
+            document.getElementById('report-level-box').className = `bg-white border rounded-xl p-6 shadow-sm ${lvl.border}`;
+            document.getElementById('report-badge').textContent = `Nível: ${lvl.name}`;
+            document.getElementById('report-desc').textContent = lvl.desc;
+
+            const hasAi = !!(e.ai && e.ai.plano_acao);
+
+            // Análise de risco (IA ou heurística)
+            let roiText;
+            if (hasAi && e.ai.analise_risco) {
+                roiText = e.ai.analise_risco;
+            } else {
+                if (e.score < 2) roiText = '<strong>Risco Elevado:</strong> Alta probabilidade de perdas financeiras por falhas estruturais. Vulnerabilidade crítica a ataques e downtime. Intervenção imediata recomendada.';
+                else if (e.score < 3.2) roiText = '<strong>Risco Moderado:</strong> Ineficiências geram custos ocultos. Oportunidade clara de aumentar a margem de lucro através da automação.';
+                else roiText = '<strong>Risco Controlado:</strong> Ambiente otimizado. A TI atua como aceleradora de negócios.';
+            }
+            document.getElementById('report-roi-text').innerHTML = roiText;
+
+            // Sumário executivo (IA)
+            const sumBox = document.getElementById('report-ai-summary-box');
+            if (hasAi && e.ai.sumario_executivo) {
+                document.getElementById('report-ai-summary').textContent = e.ai.sumario_executivo;
+                sumBox.classList.remove('hidden');
+            } else {
+                sumBox.classList.add('hidden');
+            }
+
+            // Insight setorial (IA ou estático)
+            document.getElementById('report-industry-name').textContent = comp.industry.toUpperCase();
+            const insight = (hasAi && e.ai.insight_setorial) ? e.ai.insight_setorial : (industryInsights[comp.industry] || industryInsights['Serviços']);
+            document.getElementById('report-industry-insight').innerHTML = insight;
+
+            // Badge do Plano de Ação
+            const planBadge = document.getElementById('report-plan-badge');
+            if (planBadge) {
+                planBadge.textContent = hasAi ? 'Classificado por IA' : 'Heurística Local';
+                planBadge.className = 'text-xs font-bold px-2 py-1 rounded border hidden sm:block ' + (hasAi ? 'text-indigo-700 bg-indigo-50 border-indigo-100' : 'text-amber-700 bg-amber-50 border-amber-200');
+            }
+
+            // Plano de Ação: prefere IA, cai para heurística
+            let actionHtml = '';
+            let matrixItems = [];
+            if (hasAi) {
+                e.ai.plano_acao.forEach(item => {
+                    actionHtml += renderActionRow({
+                        categoria: item.categoria,
+                        titulo: item.vulnerabilidade,
+                        nota: item.nota_original,
+                        acao_auditor: item.acao_auditor,
+                        recomendacao: item.recomendacao,
+                        impacto: item.impacto,
+                        esforco: item.esforco,
+                        prioridade: item.prioridade
+                    });
+                    matrixItems.push(item);
+                });
+            } else {
+                e.answers.forEach(ans => {
+                    if (ans.val < 3) {
+                        const q = db.questions.find(x => x.id === ans.qId);
+                        const heur = categoryHeuristics[q.category] || { impact: 'Médio', effort: 'Médio' };
+                        const impacto = (heur.impact || '').replace('Altíssimo', 'Alto').replace(/^(Alto|Médio|Baixo).*/, '$1') || 'Médio';
+                        const esforco = heur.effort || 'Médio';
+                        actionHtml += renderActionRow({
+                            categoria: q.category,
+                            titulo: q.text,
+                            nota: ans.val,
+                            acao_auditor: ans.text,
+                            recomendacao: ans.text || 'Ação corretiva a definir.',
+                            impacto, esforco, prioridade: null
+                        });
+                        matrixItems.push({ categoria: q.category, vulnerabilidade: q.text, impacto, esforco });
+                    }
+                });
+            }
+
+            if (!actionHtml) {
+                actionHtml = `<tr><td colspan="4" class="text-center py-6 text-gray-500 font-medium">Nenhuma ação crítica exigida. Ambiente de alta maturidade.</td></tr>`;
+            }
+            document.getElementById('report-action-plan').innerHTML = actionHtml;
+
+            // Gráfico de Radar (sempre com base nas respostas)
+            const catData = {};
+            e.answers.forEach((ans) => {
+                const q = db.questions.find(x => x.id === ans.qId);
+                if (!catData[q.category]) catData[q.category] = { sum: 0, count: 0 };
+                catData[q.category].sum += ans.val;
+                catData[q.category].count++;
+            });
+            const labels = []; const dataScores = [];
+            for (let cat in catData) {
+                labels.push(cat);
+                dataScores.push((catData[cat].sum / catData[cat].count).toFixed(1));
+            }
+            drawRadarChart(labels, dataScores);
+
+            // Matriz Impacto x Esforço
+            drawMatrixChart(matrixItems);
+        }
+
+        function levelScore(v) { return v === 'Alto' ? 3 : (v === 'Médio' ? 2 : 1); }
+
+        function badgeImpacto(v) {
+            const map = { 'Alto': 'bg-red-100 text-red-800', 'Médio': 'bg-orange-100 text-orange-800', 'Baixo': 'bg-blue-100 text-blue-800' };
+            return `<span class="px-2.5 py-1 rounded text-xs font-bold ${map[v] || 'bg-gray-100 text-gray-700'}">${v}</span>`;
+        }
+        function badgeEsforco(v) {
+            const map = { 'Alto': 'bg-slate-200 text-slate-800', 'Médio': 'bg-gray-100 text-gray-700', 'Baixo': 'bg-emerald-100 text-emerald-800' };
+            return `<span class="px-2.5 py-1 rounded text-xs font-bold ${map[v] || 'bg-gray-100 text-gray-700'}">${v}</span>`;
+        }
+        function badgePrioridade(v) {
+            if (!v) return '';
+            const map = { 'Crítica': 'bg-red-600 text-white', 'Alta': 'bg-orange-500 text-white', 'Média': 'bg-amber-300 text-amber-900', 'Baixa': 'bg-slate-300 text-slate-800' };
+            return `<span class="ml-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide ${map[v] || 'bg-gray-200'}">${v}</span>`;
+        }
+
+        function renderActionRow(it) {
+            const recoBlock = it.recomendacao ? `<span class="text-indigo-700 italic block mt-1"><strong>IA:</strong> ${escapeHtml(it.recomendacao)}</span>` : '';
+            const auditBlock = it.acao_auditor ? `<span class="text-orange-700 italic block mt-1"><strong>Auditor:</strong> ${escapeHtml(it.acao_auditor)}</span>` : '';
+            return `
+                <tr class="hover:bg-slate-50 transition print-break-inside-avoid">
+                    <td class="px-4 py-4 border-t border-gray-100 text-sm text-gray-800 font-bold align-top">
+                        ${escapeHtml(it.categoria)}
+                        ${badgePrioridade(it.prioridade)}
+                    </td>
+                    <td class="px-4 py-4 border-t border-gray-100 text-sm text-gray-700 leading-relaxed align-top">
+                        <strong>Ajuste Necessário${it.nota != null ? ' (Nota ' + it.nota + ')' : ''}:</strong> ${escapeHtml(it.titulo)}
+                        ${recoBlock}
+                        ${auditBlock}
+                    </td>
+                    <td class="px-4 py-4 border-t border-gray-100 text-center align-top">${badgeImpacto(it.impacto)}</td>
+                    <td class="px-4 py-4 border-t border-gray-100 text-center align-top">${badgeEsforco(it.esforco)}</td>
+                </tr>`;
+        }
+
+        function escapeHtml(s) {
+            return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]));
+        }
+
+        function drawMatrixChart(items) {
+            const canvas = document.getElementById('matrixChart');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            if (matrixChartInstance) matrixChartInstance.destroy();
+
+            // Agrupa pontos coincidentes para aplicar leve jitter
+            const buckets = {};
+            const points = items.map((it, idx) => {
+                const x = levelScore(it.esforco);
+                const y = levelScore(it.impacto);
+                const key = x + '_' + y;
+                buckets[key] = (buckets[key] || 0) + 1;
+                const n = buckets[key];
+                const jitter = n === 1 ? 0 : ((n % 2 === 0) ? 0.12 * Math.ceil(n/2) : -0.12 * Math.ceil(n/2));
+                return {
+                    x: x + jitter, y: y + (n > 1 ? jitter * 0.8 : 0),
+                    label: `${it.categoria}`,
+                    vuln: it.vulnerabilidade || it.titulo || '',
+                    impacto: it.impacto, esforco: it.esforco, prioridade: it.prioridade
+                };
+            });
+
+            const colorFor = p => {
+                if (p.prioridade === 'Crítica') return 'rgba(220, 38, 38, 0.9)';
+                if (p.prioridade === 'Alta') return 'rgba(234, 88, 12, 0.9)';
+                if (p.prioridade === 'Média') return 'rgba(217, 119, 6, 0.9)';
+                if (p.prioridade === 'Baixa') return 'rgba(100, 116, 139, 0.9)';
+                // fallback sem prioridade IA
+                if (p.impacto === 'Alto' && p.esforco === 'Baixo') return 'rgba(220, 38, 38, 0.9)';
+                if (p.impacto === 'Alto') return 'rgba(234, 88, 12, 0.9)';
+                if (p.impacto === 'Médio') return 'rgba(217, 119, 6, 0.9)';
+                return 'rgba(100, 116, 139, 0.9)';
+            };
+
+            const datasets = [{
+                label: 'Vulnerabilidades',
+                data: points,
+                backgroundColor: points.map(colorFor),
+                borderColor: points.map(colorFor),
+                pointRadius: 8, pointHoverRadius: 11, borderWidth: 2
+            }];
+
+            matrixChartInstance = new Chart(ctx, {
+                type: 'scatter',
+                data: { datasets },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            title: { display: true, text: 'Esforço → maior', font: { weight: 'bold' } },
+                            type: 'linear',
+                            min: 0.5, max: 3.5,
+                            afterBuildTicks: (axis) => { axis.ticks = [{value:1},{value:2},{value:3}]; },
+                            ticks: { stepSize: 1, autoSkip: false, callback: (v) => ({1:'Baixo', 2:'Médio', 3:'Alto'}[Math.round(v)] || '') },
+                            grid: { color: 'rgba(0,0,0,0.08)' }
+                        },
+                        y: {
+                            title: { display: true, text: 'Impacto → maior', font: { weight: 'bold' } },
+                            type: 'linear',
+                            min: 0.5, max: 3.5,
+                            afterBuildTicks: (axis) => { axis.ticks = [{value:1},{value:2},{value:3}]; },
+                            ticks: { stepSize: 1, autoSkip: false, callback: (v) => ({1:'Baixo', 2:'Médio', 3:'Alto'}[Math.round(v)] || '') },
+                            grid: { color: 'rgba(0,0,0,0.08)' }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                title: (ctx) => ctx[0].raw.label,
+                                label: (ctx) => {
+                                    const r = ctx.raw;
+                                    const v = r.vuln.length > 80 ? r.vuln.slice(0,77)+'...' : r.vuln;
+                                    return [v, `Impacto: ${r.impacto} · Esforço: ${r.esforco}` + (r.prioridade ? ` · Prioridade: ${r.prioridade}` : '')];
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function drawRadarChart(labels, data) {
+            const ctx = document.getElementById('radarChart').getContext('2d');
+            if(radarChartInstance) radarChartInstance.destroy();
+
+            radarChartInstance = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Score Obtido',
+                        data: data,
+                        backgroundColor: 'rgba(37, 99, 235, 0.2)',
+                        borderColor: 'rgba(37, 99, 235, 1)',
+                        pointBackgroundColor: 'rgba(37, 99, 235, 1)',
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: 'rgba(37, 99, 235, 1)',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            angleLines: { color: 'rgba(0, 0, 0, 0.1)' },
+                            grid: { color: 'rgba(0, 0, 0, 0.1)' },
+                            pointLabels: { font: { family: 'Inter', size: 10, weight: 'bold' }, color: '#475569' },
+                            ticks: { min: 0, max: 4, stepSize: 1, display: false }
+                        }
+                    },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+
+        initDB();
+        navigate('login');
+
+    </script>
+</body>
+</html>
