@@ -43,32 +43,13 @@
                         <a href="#" onclick="navigate('questions')" id="nav-questions" class="hover:bg-slate-700 px-3 py-2 rounded-md text-sm font-medium hidden">Questões (Admin)</a>
                     </div>
                 </div>
-                <div class="flex items-center gap-3">
-                    <span id="ai-status-badge" class="text-xs font-bold bg-emerald-500 text-white px-2 py-0.5 rounded">IA Ativa</span>
-                    <span id="current-user-display" class="text-sm text-slate-300"></span>
+                <div class="flex items-center">
+                    <span id="current-user-display" class="text-sm text-slate-300 mr-4"></span>
                     <button onclick="logout()" class="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-md text-sm font-medium transition">Sair</button>
                 </div>
             </div>
         </div>
     </nav>
-
-    <!-- OVERLAY DE PROCESSAMENTO IA -->
-    <div id="ai-loading-overlay" class="fixed inset-0 bg-slate-900 bg-opacity-80 backdrop-blur-sm hidden items-center justify-center z-[100] print-hidden">
-        <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4 text-center">
-            <div class="flex justify-center mb-5">
-                <div class="relative w-16 h-16">
-                    <div class="absolute inset-0 border-4 border-blue-100 rounded-full"></div>
-                    <div class="absolute inset-0 border-4 border-blue-600 rounded-full animate-spin" style="border-right-color: transparent; border-bottom-color: transparent;"></div>
-                </div>
-            </div>
-            <h3 class="text-xl font-bold text-slate-800 mb-2">Processando Diagnóstico com IA</h3>
-            <p class="text-sm text-gray-600 mb-4" id="ai-loading-step">Inicializando análise Gemini...</p>
-            <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
-                <div id="ai-loading-bar" class="bg-gradient-to-r from-blue-500 to-blue-700 h-2 rounded-full transition-all duration-700" style="width: 10%"></div>
-            </div>
-            <p class="text-[11px] text-gray-400 mt-4">Modelo: <span id="ai-loading-model" class="font-mono">gemini-2.5-flash</span></p>
-        </div>
-    </div>
 
     <!-- ÁREA DE CONTEÚDO PRINCIPAL -->
     <main class="flex-1 overflow-y-auto p-4 sm:p-8 print-mt-0">
@@ -88,9 +69,6 @@
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Palavra-passe</label>
                         <input type="password" id="login-pass" class="w-full border-gray-300 rounded-lg p-3 border focus:ring-blue-500 focus:border-blue-500" placeholder="123">
-                    </div>
-                    <div>
-                        <p class="text-[11px] text-gray-500 mt-1 leading-snug">A integração com a IA (Gemini) já está ativa neste sistema. Basta fazer login e iniciar a avaliação.</p>
                     </div>
                     <button onclick="login()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition mt-4">Entrar no Sistema</button>
                     <p class="text-xs text-center text-gray-400 mt-4">Admin: admin / 123 | Avaliador: avaliador / 123</p>
@@ -300,17 +278,7 @@
                         </div>
                     </div>
 
-                    <!-- Sumário Executivo (IA) -->
-                    <div id="report-ai-summary-box" class="hidden bg-gradient-to-br from-indigo-50 to-blue-50 border border-indigo-200 rounded-xl p-6 mb-8 print-break-inside-avoid shadow-sm relative overflow-hidden">
-                        <div class="absolute top-0 right-0 bg-indigo-600 text-white text-xs px-3 py-1 font-bold rounded-bl-lg flex items-center">
-                            <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a1 1 0 011 1v1.323l3.954 1.582 1.599-.8a1 1 0 01.894 1.79l-1.233.616 1.738 5.42a1 1 0 01-.285 1.05A3.989 3.989 0 0115 15a3.989 3.989 0 01-2.667-1.019 1 1 0 01-.285-1.05l1.715-5.349L11 6.477V16h2a1 1 0 110 2H7a1 1 0 110-2h2V6.477L6.237 7.582l1.715 5.349a1 1 0 01-.285 1.05A3.989 3.989 0 015 15a3.989 3.989 0 01-2.667-1.019 1 1 0 01-.285-1.05l1.738-5.42-1.233-.617a1 1 0 01.894-1.788l1.599.799L9 4.323V3a1 1 0 011-1z"/></svg>
-                            Gerado por IA (Gemini)
-                        </div>
-                        <h3 class="text-sm font-bold text-indigo-800 uppercase tracking-wider mb-3">Sumário Executivo</h3>
-                        <p class="text-sm text-slate-800 leading-relaxed" id="report-ai-summary">---</p>
-                    </div>
-
-                    <!-- Insights Setoriais -->
+                    <!-- Insights Setoriais Estáticos -->
                     <div class="bg-blue-50 border border-blue-200 rounded-xl p-6 mb-10 print-break-inside-avoid shadow-sm relative overflow-hidden">
                         <div class="absolute top-0 right-0 bg-blue-600 text-white text-xs px-3 py-1 font-bold rounded-bl-lg">Insight Consultivo</div>
                         <h3 class="text-sm font-bold text-blue-800 uppercase tracking-wider mb-3 flex items-center">
@@ -320,20 +288,20 @@
                         <p class="text-sm text-blue-900 leading-relaxed font-medium" id="report-industry-insight">---</p>
                     </div>
 
-                    <!-- Plano de Ação Estratégico -->
+                    <!-- Plano de Ação Estratégico Heurístico -->
                     <div class="mb-10">
                         <div class="flex justify-between items-end mb-6 border-b-2 border-gray-100 pb-2">
                             <h3 class="text-xl font-bold text-slate-800">Plano de Ação Tático</h3>
-                            <span id="report-plan-badge" class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded border border-blue-100 hidden sm:block">Prioridades Estratégicas</span>
+                            <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded border border-blue-100 hidden sm:block">Prioridades Estratégicas</span>
                         </div>
-                        <p class="text-sm text-gray-500 mb-4">Vulnerabilidades (notas abaixo de 3) classificadas pela IA quanto a Impacto e Esforço, com recomendação consultiva personalizada.</p>
+                        <p class="text-sm text-gray-500 mb-4">Com base nas vulnerabilidades e nas notas obtidas (Score < 3), o sistema classificou as seguintes ações corretivas informadas pelo auditor:</p>
                         
                         <div class="overflow-x-auto bg-white rounded-xl border border-gray-200 shadow-sm">
                             <table class="min-w-full divide-y divide-gray-200">
                                 <thead class="bg-slate-50">
                                     <tr>
                                         <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Domínio / Categoria</th>
-                                        <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Vulnerabilidade & Recomendação</th>
+                                        <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Vulnerabilidade & Ação Corretiva</th>
                                         <th class="px-4 py-3 text-center text-xs font-bold text-gray-500 uppercase">Impacto</th>
                                         <th class="px-4 py-3 text-center text-xs font-bold text-gray-500 uppercase">Esforço</th>
                                     </tr>
@@ -341,18 +309,6 @@
                                 <tbody id="report-action-plan" class="divide-y divide-gray-100"></tbody>
                             </table>
                         </div>
-                    </div>
-
-                    <!-- Matriz Impacto x Esforço -->
-                    <div class="mb-10 print-break-inside-avoid" id="report-matrix-wrapper">
-                        <div class="flex justify-between items-end mb-6 border-b-2 border-gray-100 pb-2">
-                            <h3 class="text-xl font-bold text-slate-800">Matriz de Priorização (Impacto × Esforço)</h3>
-                            <span class="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded border border-indigo-100 hidden sm:block">Classificação IA</span>
-                        </div>
-                        <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4" style="height: 420px;">
-                            <canvas id="matrixChart"></canvas>
-                        </div>
-                        <p class="text-xs text-gray-500 mt-3 italic">Quadrante superior-esquerdo (Alto Impacto × Baixo Esforço) = <strong>Quick Wins</strong>. Quadrante superior-direito = <strong>Projetos Estratégicos</strong>. Prioridade conforme cor do ponto.</p>
                     </div>
 
                 </div>
@@ -610,208 +566,6 @@
         let currentUser = null;
         let activeEvalObj = null;
         let radarChartInstance = null;
-        let matrixChartInstance = null;
-
-        /* ==========================================
-           2.1 CLIENTE GEMINI AI
-           ========================================== */
-        // Chave API Gemini embutida para uso interno. Trocar aqui quando necessário.
-        const GEMINI_API_KEY = null;
-        const GEMINI_PRIMARY_MODEL = 'gemini-2.5-flash';
-        const GEMINI_FALLBACK_MODEL = 'gemini-flash-latest';
-        // Cadeia de modelos de fallback (ordem de tentativa quando o anterior falhar com 503/404)
-        const GEMINI_MODEL_CHAIN = ['gemini-2.5-flash', 'gemini-flash-latest', 'gemini-2.0-flash', 'gemini-2.5-flash-lite'];
-
-        function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
-
-        async function callGemini(prompt, { model = GEMINI_PRIMARY_MODEL, responseJson = true, maxTokens = 8192, _attempt = 0, _modelIdx = 0 } = {}) {
-            const key = getGeminiKey();
-            if (!key) throw new Error('API_KEY_MISSING');
-
-            const body = {
-                contents: [{ role: 'user', parts: [{ text: prompt }] }],
-                generationConfig: {
-                    temperature: 0.3,
-                    topP: 0.9,
-                    maxOutputTokens: maxTokens,
-                    ...(responseJson ? { responseMimeType: 'application/json' } : {})
-                }
-            };
-
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(key)}`;
-            const modelLabel = document.getElementById('ai-loading-model');
-            const stepLabel = document.getElementById('ai-loading-step');
-            if (modelLabel) modelLabel.textContent = model + (_attempt > 0 ? ' (tentativa ' + (_attempt + 1) + ')' : '');
-
-            let resp;
-            try {
-                resp = await fetch(url, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(body)
-                });
-            } catch (netErr) {
-                // Rede: tenta de novo 2x com backoff
-                if (_attempt < 2) {
-                    const wait = 1500 * Math.pow(2, _attempt);
-                    if (stepLabel) stepLabel.textContent = 'Rede instável, tentando novamente em ' + Math.round(wait/1000) + 's...';
-                    await sleep(wait);
-                    return callGemini(prompt, { model, responseJson, maxTokens, _attempt: _attempt + 1, _modelIdx });
-                }
-                throw new Error('NETWORK_ERROR: ' + netErr.message);
-            }
-
-            if (!resp.ok) {
-                const errText = await resp.text().catch(() => '');
-                const status = resp.status;
-                const transient = (status === 429 || status === 500 || status === 502 || status === 503 || status === 504);
-
-                // 1) Erros transitórios: até 3 tentativas com backoff exponencial
-                if (transient && _attempt < 3) {
-                    const wait = 2000 * Math.pow(2, _attempt); // 2s, 4s, 8s
-                    console.warn('Gemini ' + status + ' (tentativa ' + (_attempt + 1) + '). Aguardando ' + wait + 'ms...');
-                    if (stepLabel) stepLabel.textContent = 'IA com alta demanda. Nova tentativa em ' + Math.round(wait/1000) + 's...';
-                    await sleep(wait);
-                    return callGemini(prompt, { model, responseJson, maxTokens, _attempt: _attempt + 1, _modelIdx });
-                }
-
-                // 2) Após esgotar, tenta próximo modelo da cadeia (para 503/404/429)
-                const nextIdx = _modelIdx + 1;
-                if ((transient || status === 404) && nextIdx < GEMINI_MODEL_CHAIN.length) {
-                    const nextModel = GEMINI_MODEL_CHAIN[nextIdx];
-                    console.warn('Alternando para modelo alternativo: ' + nextModel);
-                    if (stepLabel) stepLabel.textContent = 'Alternando para modelo ' + nextModel + '...';
-                    return callGemini(prompt, { model: nextModel, responseJson, maxTokens, _attempt: 0, _modelIdx: nextIdx });
-                }
-
-                throw new Error('HTTP ' + status + ': ' + errText.slice(0, 400));
-            }
-
-            const data = await resp.json();
-            const cand = data?.candidates?.[0];
-            const finishReason = cand?.finishReason || '';
-            const text = cand?.content?.parts?.map(p => p.text).join('') || '';
-            if (!text) throw new Error('EMPTY_RESPONSE');
-
-            if (!responseJson) return text;
-
-            // Tentativa 1..4 de parse
-            const parsed = safeParseJson(text);
-            if (parsed.ok) return parsed.value;
-
-            // Retry: pedir para a IA corrigir o JSON
-            console.warn('JSON invalido do Gemini. Tentando reparo via IA...', parsed.error);
-            const el = document.getElementById('ai-loading-step');
-            if (el) el.textContent = 'Reparando resposta da IA...';
-            try {
-                const repairPrompt = 'O texto abaixo deveria ser um JSON valido, mas contem erros de sintaxe (virgulas, aspas, colchetes ou chaves mal fechadas). Retorne APENAS o JSON corrigido, sem markdown, sem comentarios, sem texto explicativo. Preserve todo o conteudo original.\n\n<<<JSON_QUEBRADO>>>\n' + text + '\n<<<FIM>>>';
-                const repaired = await callGeminiRaw(repairPrompt, { model, maxTokens: Math.max(maxTokens, 8192) });
-                const parsed2 = safeParseJson(repaired);
-                if (parsed2.ok) return parsed2.value;
-                throw new Error('INVALID_JSON (apos reparo): ' + (parsed2.error || '').slice(0, 200));
-            } catch (repairErr) {
-                throw new Error('INVALID_JSON: ' + (parsed.error || '').slice(0, 200) + ' | finish=' + finishReason);
-            }
-        }
-
-        // Chamada crua (usada no reparo)
-        async function callGeminiRaw(prompt, { model = GEMINI_PRIMARY_MODEL, maxTokens = 8192 } = {}) {
-            const key = getGeminiKey();
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(key)}`;
-            const resp = await fetch(url, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contents: [{ role: 'user', parts: [{ text: prompt }] }],
-                    generationConfig: { temperature: 0.1, maxOutputTokens: maxTokens, responseMimeType: 'application/json' }
-                })
-            });
-            if (!resp.ok) throw new Error('HTTP ' + resp.status + ' no reparo');
-            const data = await resp.json();
-            return data?.candidates?.[0]?.content?.parts?.map(p => p.text).join('') || '';
-        }
-
-        // Parser tolerante
-        function safeParseJson(raw) {
-            if (!raw) return { ok: false, error: 'empty' };
-            let s = String(raw).trim();
-            s = s.replace(/^\s*```(?:json|javascript)?\s*/i, '').replace(/```\s*$/i, '').trim();
-            try { return { ok: true, value: JSON.parse(s) }; } catch (_) {}
-            const first = s.indexOf('{');
-            const last = s.lastIndexOf('}');
-            if (first >= 0 && last > first) {
-                const slice = s.slice(first, last + 1);
-                try { return { ok: true, value: JSON.parse(slice) }; } catch (_) {
-                    const fixed = sanitizeJson(slice);
-                    try { return { ok: true, value: JSON.parse(fixed) }; } catch (e) {
-                        const salvaged = salvageTruncated(s);
-                        if (salvaged) {
-                            try { return { ok: true, value: JSON.parse(salvaged) }; }
-                            catch (e2) { return { ok: false, error: e2.message }; }
-                        }
-                        return { ok: false, error: e.message };
-                    }
-                }
-            }
-            // Caso JSON tenha sido truncado antes do } final
-            const salvaged = salvageTruncated(s);
-            if (salvaged) {
-                try { return { ok: true, value: JSON.parse(salvaged) }; } catch (e) { return { ok: false, error: e.message }; }
-            }
-            return { ok: false, error: 'no_json_braces' };
-        }
-
-        function sanitizeJson(s) {
-            let out = s;
-            // Remove virgulas penduradas antes de ] ou }
-            out = out.replace(/,(\s*[}\]])/g, '$1');
-            // Aspas tipograficas -> aspas normais
-            out = out.replace(/[\u2018\u2019]/g, "'").replace(/[\u201C\u201D]/g, '"');
-            // Escapa quebras de linha soltas dentro de strings
-            out = out.replace(/"((?:[^"\\]|\\.)*)"/g, (m, inner) => {
-                const fixed = inner.replace(/\r?\n/g, '\\n').replace(/\t/g, '\\t');
-                return '"' + fixed + '"';
-            });
-            return out;
-        }
-
-        // Se a resposta foi truncada dentro de plano_acao, corta no ultimo } completo e fecha
-        function salvageTruncated(s) {
-            const idxArr = s.indexOf('"plano_acao"');
-            if (idxArr < 0) return null;
-            const arrStart = s.indexOf('[', idxArr);
-            if (arrStart < 0) return null;
-            let i = arrStart + 1, depth = 0, inStr = false, esc = false, lastClose = -1;
-            for (; i < s.length; i++) {
-                const ch = s[i];
-                if (inStr) {
-                    if (esc) { esc = false; continue; }
-                    if (ch === '\\') { esc = true; continue; }
-                    if (ch === '"') inStr = false;
-                    continue;
-                }
-                if (ch === '"') { inStr = true; continue; }
-                if (ch === '{') depth++;
-                else if (ch === '}') { depth--; if (depth === 0) lastClose = i; }
-                else if (ch === ']' && depth === 0) { return s.slice(0, i + 1) + '}'; }
-            }
-            if (lastClose < 0) return null;
-            return s.slice(0, lastClose + 1) + ']}';
-        }
-
-        function showAiLoading(step, percent) {
-            const ov = document.getElementById('ai-loading-overlay');
-            ov.classList.remove('hidden');
-            ov.classList.add('flex');
-            if (step) document.getElementById('ai-loading-step').textContent = step;
-            if (typeof percent === 'number') document.getElementById('ai-loading-bar').style.width = percent + '%';
-            document.getElementById('ai-loading-model').textContent = GEMINI_PRIMARY_MODEL;
-        }
-
-        function hideAiLoading() {
-            const ov = document.getElementById('ai-loading-overlay');
-            ov.classList.add('hidden');
-            ov.classList.remove('flex');
-        }
 
         function initDB() {
             const stored = localStorage.getItem('mc_db_v7_no_ai');
@@ -843,36 +597,13 @@
             const u = document.getElementById('login-user').value;
             const p = document.getElementById('login-pass').value;
             const user = db.users.find(x => x.username === u && x.pass === p);
-            if (!user) { alert('Credenciais inválidas.'); return; }
-            // IA sempre ativa (chave embutida)
-            const badge = document.getElementById('ai-status-badge');
-            if (badge) { badge.textContent = 'IA Ativa'; badge.className = 'text-xs font-bold bg-emerald-500 text-white px-2 py-0.5 rounded'; }
-            currentUser = user;
-            document.getElementById('main-nav').classList.remove('hidden');
-            document.getElementById('current-user-display').textContent = `${user.name} (${user.role})`;
-            document.getElementById('nav-questions').classList.toggle('hidden', user.role !== 'admin');
-            navigate('dashboard');
-        }
-
-        function getGeminiKey() {
-            // 1) chave embutida (prioridade); 2) override em window; 3) sessionStorage legado
-            return GEMINI_API_KEY || window.GEMINI_API_KEY || sessionStorage.getItem('mc_gemini_key') || '';
-        }
-
-        function _unusedInlineKey() {
-            const newKey = null;
-            if (newKey === null) return;
-            const v = newKey.trim();
-            if (v) {
-                sessionStorage.setItem('mc_gemini_key', v);
-                const badge = document.getElementById('ai-status-badge');
-                if (badge) { badge.textContent = 'IA Ativa'; badge.className = 'text-xs font-bold bg-emerald-500 text-white px-2 py-0.5 rounded'; }
-                alert('Chave atualizada.');
-            } else {
-                sessionStorage.removeItem('mc_gemini_key');
-                const badge = document.getElementById('ai-status-badge');
-                if (badge) { badge.textContent = 'IA Inativa'; badge.className = 'text-xs font-bold bg-slate-500 text-white px-2 py-0.5 rounded'; }
-            }
+            if (user) {
+                currentUser = user;
+                document.getElementById('main-nav').classList.remove('hidden');
+                document.getElementById('current-user-display').textContent = `${user.name} (${user.role})`;
+                document.getElementById('nav-questions').classList.toggle('hidden', user.role !== 'admin');
+                navigate('dashboard');
+            } else { alert('Credenciais inválidas.'); }
         }
 
         function logout() {
@@ -1079,159 +810,17 @@
         }
 
         /* ==========================================
-           6. PROCESSAMENTO E GERAÇÃO DE RESULTADOS (IA INSTANTÂNEA)
+           6. PROCESSAMENTO E GERAÇÃO DE RESULTADOS LOCAIS
            ========================================== */
-        async function processFinalEvaluation() {
+        function processFinalEvaluation() {
             activeEvalObj.status = 'completed';
             const sum = activeEvalObj.answers.reduce((a, c) => a + c.val, 0);
             const score = (sum / db.questions.length).toFixed(1);
             activeEvalObj.score = score;
             activeEvalObj.maturityLevel = maturityLevels.find(m => score <= m.max)?.name || maturityLevels[4].name;
 
-            const comp = db.companies.find(c => c.id === activeEvalObj.companyId) || { name: '---', industry: 'Serviços' };
-            const gaps = activeEvalObj.answers
-                .map(ans => {
-                    const q = db.questions.find(x => x.id === ans.qId);
-                    return { qId: ans.qId, category: q.category, question: q.text, score: ans.val, note: ans.text };
-                })
-                .filter(g => g.score < 3);
-
-            if (getGeminiKey()) {
-                try {
-                    showAiLoading('Enviando respostas para a IA (Gemini)...', 15);
-                    await new Promise(r => setTimeout(r, 150));
-
-                    const prompt = buildDiagnosticPrompt(comp, score, activeEvalObj.maturityLevel, gaps, activeEvalObj.answers);
-                    showAiLoading('Classificando Impacto e Esforço de cada vulnerabilidade...', 45);
-                    const ai = await callGemini(prompt, { responseJson: true });
-                    showAiLoading('Montando relatório consultivo...', 85);
-
-                    activeEvalObj.ai = normalizeAiResult(ai, gaps);
-                    activeEvalObj.aiGeneratedAt = new Date().toISOString();
-                } catch (err) {
-                    console.error('Falha IA:', err);
-                    activeEvalObj.ai = null;
-                    activeEvalObj.aiError = err.message;
-                    hideAiLoading();
-                    alert(friendlyAiError(err));
-                }
-            } else {
-                activeEvalObj.ai = null;
-                activeEvalObj.aiError = 'API_KEY_MISSING';
-            }
-
             saveDB();
-            hideAiLoading();
             showReport(activeEvalObj.id);
-        }
-
-        function friendlyAiError(err) {
-            const m = (err && err.message) || '';
-            if (m.includes('API_KEY_MISSING')) return 'Nenhuma chave API Gemini configurada. O relatório será gerado com heurísticas locais. Clique no badge "IA" na barra superior para inserir a chave.';
-            if (m.startsWith('HTTP 400')) return 'Requisição inválida para a API Gemini (400). Verifique a chave e tente novamente.';
-            if (m.startsWith('HTTP 401') || m.startsWith('HTTP 403')) return 'Chave API Gemini inválida ou sem permissão (401/403). Atualize a chave no badge "IA" da barra superior.';
-            if (m.startsWith('HTTP 404')) return 'Modelo Gemini indisponível (404). Foi tentado fallback automático sem sucesso. Confirme se sua chave tem acesso a gemini-2.5-flash.';
-            if (m.startsWith('HTTP 429')) return 'Limite de requisições do Gemini atingido (429). Aguarde e tente novamente.';
-            if (m.includes('NETWORK_ERROR')) return 'Falha de rede ao chamar a API Gemini. Verifique sua conexão.';
-            if (m.includes('INVALID_JSON')) return 'A IA retornou um formato inesperado. Tente finalizar novamente.';
-            return 'Erro ao processar relatório via IA: ' + m;
-        }
-
-        function buildDiagnosticPrompt(company, score, level, gaps, allAnswers) {
-            const gapList = gaps.map((g, i) => ({
-                id: g.qId,
-                categoria: g.category,
-                pergunta: g.question,
-                nota: g.score,
-                acao_corretiva_auditor: g.note || '(não informada)'
-            }));
-
-            const fullAnswers = allAnswers.map(a => {
-                const q = db.questions.find(x => x.id === a.qId);
-                return { categoria: q.category, pergunta: q.text, nota: a.val };
-            });
-
-            return `Você é um consultor sênior de governança de TI (COBIT, ITIL 4, ISO 27001) produzindo um relatório executivo de maturidade.
-
-CONTEXTO DA EMPRESA:
-- Nome: ${company.name}
-- Setor: ${company.industry}
-- Score global obtido: ${score}/4.0
-- Nível de maturidade: ${level}
-
-RESPOSTAS COMPLETAS (25 indicadores):
-${JSON.stringify(fullAnswers, null, 0)}
-
-VULNERABILIDADES IDENTIFICADAS (nota < 3) que exigem plano de ação:
-${JSON.stringify(gapList, null, 0)}
-
-TAREFA: Retorne EXCLUSIVAMENTE um objeto JSON válido (sem markdown, sem comentários) com a seguinte estrutura exata:
-
-{
-  "sumario_executivo": "Parágrafo único (3-5 frases) em português do Brasil, tom consultivo e executivo, destacando o diagnóstico geral, principais riscos e oportunidades para o setor ${company.industry}.",
-  "analise_risco": "Parágrafo curto (2-3 frases) explicando o risco operacional e financeiro associado ao score ${score}.",
-  "insight_setorial": "Parágrafo (2-4 frases) com recomendações específicas para o setor ${company.industry} considerando as vulnerabilidades identificadas.",
-  "plano_acao": [
-    {
-      "id": <número do id da vulnerabilidade>,
-      "categoria": "<categoria original>",
-      "vulnerabilidade": "<resumo objetivo do gap em 1 frase>",
-      "recomendacao": "<recomendação consultiva acionável em 1-2 frases, personalizada para o setor e para a nota atual>",
-      "impacto": "Alto|Médio|Baixo",
-      "esforco": "Alto|Médio|Baixo",
-      "prioridade": "Crítica|Alta|Média|Baixa"
-    }
-  ]
-}
-
-REGRAS OBRIGATÓRIAS (siga à risca para garantir JSON válido):
-1. Inclua EXATAMENTE um item em "plano_acao" para CADA vulnerabilidade listada acima (mesmo id), sem repetir nem inventar novas.
-2. "impacto" e "esforco" devem ser classificados individualmente por item conforme a criticidade, complexidade técnica, dependência de integração e custos típicos do setor ${company.industry}.
-3. "prioridade" segue: Alto Impacto + Baixo Esforço = Crítica (Quick Win); Alto Impacto + Alto Esforço = Alta; Médio Impacto = Média; Baixo Impacto = Baixa.
-4. NUNCA use aspas duplas dentro das strings; se precisar destacar algo, use aspas simples ou remova-as.
-5. NUNCA use quebras de linha reais dentro de strings (sem \\n no meio dos textos).
-6. NUNCA use aspas tipográficas curvas (“ ” ‘ ’). Use apenas aspas retas.
-7. Não inclua markdown, comentários, texto antes ou depois do JSON.
-8. Cada string deve ter no máximo 400 caracteres.
-9. Sempre responda em português do Brasil.`;
-        }
-
-        function normalizeAiResult(ai, gaps) {
-            const allowed = ['Alto', 'Médio', 'Baixo'];
-            const prioridades = ['Crítica', 'Alta', 'Média', 'Baixa'];
-            const norm = {
-                sumario_executivo: (ai.sumario_executivo || '').trim(),
-                analise_risco: (ai.analise_risco || '').trim(),
-                insight_setorial: (ai.insight_setorial || '').trim(),
-                plano_acao: []
-            };
-            const items = Array.isArray(ai.plano_acao) ? ai.plano_acao : [];
-            // indexar por id
-            const byId = {};
-            items.forEach(it => { if (it && it.id != null) byId[it.id] = it; });
-
-            gaps.forEach(g => {
-                const src = byId[g.qId] || {};
-                const impacto = allowed.includes(src.impacto) ? src.impacto : 'Médio';
-                const esforco = allowed.includes(src.esforco) ? src.esforco : 'Médio';
-                let prioridade = prioridades.includes(src.prioridade) ? src.prioridade : null;
-                if (!prioridade) {
-                    if (impacto === 'Alto' && esforco === 'Baixo') prioridade = 'Crítica';
-                    else if (impacto === 'Alto') prioridade = 'Alta';
-                    else if (impacto === 'Médio') prioridade = 'Média';
-                    else prioridade = 'Baixa';
-                }
-                norm.plano_acao.push({
-                    id: g.qId,
-                    categoria: src.categoria || g.category,
-                    vulnerabilidade: (src.vulnerabilidade || g.question).toString().trim(),
-                    recomendacao: (src.recomendacao || g.note || 'Ação corretiva a definir.').toString().trim(),
-                    impacto, esforco, prioridade,
-                    nota_original: g.score,
-                    acao_auditor: g.note || ''
-                });
-            });
-            return norm;
         }
 
         /* ==========================================
@@ -1250,221 +839,60 @@ REGRAS OBRIGATÓRIAS (siga à risca para garantir JSON válido):
             document.getElementById('report-badge').textContent = `Nível: ${lvl.name}`;
             document.getElementById('report-desc').textContent = lvl.desc;
 
-            const hasAi = !!(e.ai && e.ai.plano_acao);
-
-            // Análise de risco (IA ou heurística)
-            let roiText;
-            if (hasAi && e.ai.analise_risco) {
-                roiText = e.ai.analise_risco;
-            } else {
-                if (e.score < 2) roiText = '<strong>Risco Elevado:</strong> Alta probabilidade de perdas financeiras por falhas estruturais. Vulnerabilidade crítica a ataques e downtime. Intervenção imediata recomendada.';
-                else if (e.score < 3.2) roiText = '<strong>Risco Moderado:</strong> Ineficiências geram custos ocultos. Oportunidade clara de aumentar a margem de lucro através da automação.';
-                else roiText = '<strong>Risco Controlado:</strong> Ambiente otimizado. A TI atua como aceleradora de negócios.';
-            }
+            let roiText = "";
+            if(e.score < 2) roiText = "<strong>Risco Elevado:</strong> Alta probabilidade de perdas financeiras por falhas estruturais. Vulnerabilidade crítica a ataques e downtime. Intervenção imediata recomendada.";
+            else if(e.score < 3.2) roiText = "<strong>Risco Moderado:</strong> Ineficiências geram custos ocultos. Oportunidade clara de aumentar a margem de lucro através da automação.";
+            else roiText = "<strong>Risco Controlado:</strong> Ambiente otimizado. A TI atua como aceleradora de negócios.";
             document.getElementById('report-roi-text').innerHTML = roiText;
 
-            // Sumário executivo (IA)
-            const sumBox = document.getElementById('report-ai-summary-box');
-            if (hasAi && e.ai.sumario_executivo) {
-                document.getElementById('report-ai-summary').textContent = e.ai.sumario_executivo;
-                sumBox.classList.remove('hidden');
-            } else {
-                sumBox.classList.add('hidden');
-            }
-
-            // Insight setorial (IA ou estático)
+            // Injetar insights estáticos por setor
             document.getElementById('report-industry-name').textContent = comp.industry.toUpperCase();
-            const insight = (hasAi && e.ai.insight_setorial) ? e.ai.insight_setorial : (industryInsights[comp.industry] || industryInsights['Serviços']);
-            document.getElementById('report-industry-insight').innerHTML = insight;
+            document.getElementById('report-industry-insight').innerHTML = industryInsights[comp.industry] || industryInsights['Serviços'];
 
-            // Badge do Plano de Ação
-            const planBadge = document.getElementById('report-plan-badge');
-            if (planBadge) {
-                planBadge.textContent = hasAi ? 'Classificado por IA' : 'Heurística Local';
-                planBadge.className = 'text-xs font-bold px-2 py-1 rounded border hidden sm:block ' + (hasAi ? 'text-indigo-700 bg-indigo-50 border-indigo-100' : 'text-amber-700 bg-amber-50 border-amber-200');
-            }
-
-            // Plano de Ação: prefere IA, cai para heurística
+            // Geração estática do Plano de Ação Baseado nas respostas
             let actionHtml = '';
-            let matrixItems = [];
-            if (hasAi) {
-                e.ai.plano_acao.forEach(item => {
-                    actionHtml += renderActionRow({
-                        categoria: item.categoria,
-                        titulo: item.vulnerabilidade,
-                        nota: item.nota_original,
-                        acao_auditor: item.acao_auditor,
-                        recomendacao: item.recomendacao,
-                        impacto: item.impacto,
-                        esforco: item.esforco,
-                        prioridade: item.prioridade
-                    });
-                    matrixItems.push(item);
-                });
-            } else {
-                e.answers.forEach(ans => {
-                    if (ans.val < 3) {
-                        const q = db.questions.find(x => x.id === ans.qId);
-                        const heur = categoryHeuristics[q.category] || { impact: 'Médio', effort: 'Médio' };
-                        const impacto = (heur.impact || '').replace('Altíssimo', 'Alto').replace(/^(Alto|Médio|Baixo).*/, '$1') || 'Médio';
-                        const esforco = heur.effort || 'Médio';
-                        actionHtml += renderActionRow({
-                            categoria: q.category,
-                            titulo: q.text,
-                            nota: ans.val,
-                            acao_auditor: ans.text,
-                            recomendacao: ans.text || 'Ação corretiva a definir.',
-                            impacto, esforco, prioridade: null
-                        });
-                        matrixItems.push({ categoria: q.category, vulnerabilidade: q.text, impacto, esforco });
-                    }
-                });
-            }
+            e.answers.forEach((ans) => {
+                if (ans.val < 3) {
+                    const q = db.questions.find(x => x.id === ans.qId);
+                    const heur = categoryHeuristics[q.category] || { impact: "Médio", effort: "Médio" };
+                    
+                    let impactColor = heur.impact.includes('Alto') ? 'bg-red-100 text-red-800' : (heur.impact.includes('Médio') ? 'bg-orange-100 text-orange-800' : 'bg-blue-100 text-blue-800');
+                    let effortColor = heur.effort.includes('Baixo') ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-200 text-gray-700';
 
-            if (!actionHtml) {
+                    actionHtml += `
+                        <tr class="hover:bg-slate-50 transition print-break-inside-avoid">
+                            <td class="px-4 py-4 border-t border-gray-100 text-sm text-gray-800 font-bold whitespace-nowrap">${q.category}</td>
+                            <td class="px-4 py-4 border-t border-gray-100 text-sm text-gray-700 leading-relaxed">
+                                <strong>Ajuste Necessário (Nota ${ans.val}):</strong> ${q.text}<br>
+                                <span class="text-orange-700 italic block mt-1">Ação Corretiva: ${ans.text}</span>
+                            </td>
+                            <td class="px-4 py-4 border-t border-gray-100 text-center"><span class="px-2.5 py-1 rounded text-xs font-bold ${impactColor}">${heur.impact}</span></td>
+                            <td class="px-4 py-4 border-t border-gray-100 text-center"><span class="px-2.5 py-1 rounded text-xs font-bold ${effortColor}">${heur.effort}</span></td>
+                        </tr>`;
+                }
+            });
+
+            if (actionHtml === '') {
                 actionHtml = `<tr><td colspan="4" class="text-center py-6 text-gray-500 font-medium">Nenhuma ação crítica exigida. Ambiente de alta maturidade.</td></tr>`;
             }
             document.getElementById('report-action-plan').innerHTML = actionHtml;
 
-            // Gráfico de Radar (sempre com base nas respostas)
+            // Preparar dados para o Gráfico de Radar
             const catData = {};
             e.answers.forEach((ans) => {
                 const q = db.questions.find(x => x.id === ans.qId);
-                if (!catData[q.category]) catData[q.category] = { sum: 0, count: 0 };
+                if(!catData[q.category]) catData[q.category] = { sum: 0, count: 0 };
                 catData[q.category].sum += ans.val;
                 catData[q.category].count++;
             });
+
             const labels = []; const dataScores = [];
-            for (let cat in catData) {
+            for(let cat in catData) {
                 labels.push(cat);
                 dataScores.push((catData[cat].sum / catData[cat].count).toFixed(1));
             }
+
             drawRadarChart(labels, dataScores);
-
-            // Matriz Impacto x Esforço
-            drawMatrixChart(matrixItems);
-        }
-
-        function levelScore(v) { return v === 'Alto' ? 3 : (v === 'Médio' ? 2 : 1); }
-
-        function badgeImpacto(v) {
-            const map = { 'Alto': 'bg-red-100 text-red-800', 'Médio': 'bg-orange-100 text-orange-800', 'Baixo': 'bg-blue-100 text-blue-800' };
-            return `<span class="px-2.5 py-1 rounded text-xs font-bold ${map[v] || 'bg-gray-100 text-gray-700'}">${v}</span>`;
-        }
-        function badgeEsforco(v) {
-            const map = { 'Alto': 'bg-slate-200 text-slate-800', 'Médio': 'bg-gray-100 text-gray-700', 'Baixo': 'bg-emerald-100 text-emerald-800' };
-            return `<span class="px-2.5 py-1 rounded text-xs font-bold ${map[v] || 'bg-gray-100 text-gray-700'}">${v}</span>`;
-        }
-        function badgePrioridade(v) {
-            if (!v) return '';
-            const map = { 'Crítica': 'bg-red-600 text-white', 'Alta': 'bg-orange-500 text-white', 'Média': 'bg-amber-300 text-amber-900', 'Baixa': 'bg-slate-300 text-slate-800' };
-            return `<span class="ml-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide ${map[v] || 'bg-gray-200'}">${v}</span>`;
-        }
-
-        function renderActionRow(it) {
-            const recoBlock = it.recomendacao ? `<span class="text-indigo-700 italic block mt-1"><strong>IA:</strong> ${escapeHtml(it.recomendacao)}</span>` : '';
-            const auditBlock = it.acao_auditor ? `<span class="text-orange-700 italic block mt-1"><strong>Auditor:</strong> ${escapeHtml(it.acao_auditor)}</span>` : '';
-            return `
-                <tr class="hover:bg-slate-50 transition print-break-inside-avoid">
-                    <td class="px-4 py-4 border-t border-gray-100 text-sm text-gray-800 font-bold align-top">
-                        ${escapeHtml(it.categoria)}
-                        ${badgePrioridade(it.prioridade)}
-                    </td>
-                    <td class="px-4 py-4 border-t border-gray-100 text-sm text-gray-700 leading-relaxed align-top">
-                        <strong>Ajuste Necessário${it.nota != null ? ' (Nota ' + it.nota + ')' : ''}:</strong> ${escapeHtml(it.titulo)}
-                        ${recoBlock}
-                        ${auditBlock}
-                    </td>
-                    <td class="px-4 py-4 border-t border-gray-100 text-center align-top">${badgeImpacto(it.impacto)}</td>
-                    <td class="px-4 py-4 border-t border-gray-100 text-center align-top">${badgeEsforco(it.esforco)}</td>
-                </tr>`;
-        }
-
-        function escapeHtml(s) {
-            return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]));
-        }
-
-        function drawMatrixChart(items) {
-            const canvas = document.getElementById('matrixChart');
-            if (!canvas) return;
-            const ctx = canvas.getContext('2d');
-            if (matrixChartInstance) matrixChartInstance.destroy();
-
-            // Agrupa pontos coincidentes para aplicar leve jitter
-            const buckets = {};
-            const points = items.map((it, idx) => {
-                const x = levelScore(it.esforco);
-                const y = levelScore(it.impacto);
-                const key = x + '_' + y;
-                buckets[key] = (buckets[key] || 0) + 1;
-                const n = buckets[key];
-                const jitter = n === 1 ? 0 : ((n % 2 === 0) ? 0.12 * Math.ceil(n/2) : -0.12 * Math.ceil(n/2));
-                return {
-                    x: x + jitter, y: y + (n > 1 ? jitter * 0.8 : 0),
-                    label: `${it.categoria}`,
-                    vuln: it.vulnerabilidade || it.titulo || '',
-                    impacto: it.impacto, esforco: it.esforco, prioridade: it.prioridade
-                };
-            });
-
-            const colorFor = p => {
-                if (p.prioridade === 'Crítica') return 'rgba(220, 38, 38, 0.9)';
-                if (p.prioridade === 'Alta') return 'rgba(234, 88, 12, 0.9)';
-                if (p.prioridade === 'Média') return 'rgba(217, 119, 6, 0.9)';
-                if (p.prioridade === 'Baixa') return 'rgba(100, 116, 139, 0.9)';
-                // fallback sem prioridade IA
-                if (p.impacto === 'Alto' && p.esforco === 'Baixo') return 'rgba(220, 38, 38, 0.9)';
-                if (p.impacto === 'Alto') return 'rgba(234, 88, 12, 0.9)';
-                if (p.impacto === 'Médio') return 'rgba(217, 119, 6, 0.9)';
-                return 'rgba(100, 116, 139, 0.9)';
-            };
-
-            const datasets = [{
-                label: 'Vulnerabilidades',
-                data: points,
-                backgroundColor: points.map(colorFor),
-                borderColor: points.map(colorFor),
-                pointRadius: 8, pointHoverRadius: 11, borderWidth: 2
-            }];
-
-            matrixChartInstance = new Chart(ctx, {
-                type: 'scatter',
-                data: { datasets },
-                options: {
-                    responsive: true, maintainAspectRatio: false,
-                    scales: {
-                        x: {
-                            title: { display: true, text: 'Esforço → maior', font: { weight: 'bold' } },
-                            type: 'linear',
-                            min: 0.5, max: 3.5,
-                            afterBuildTicks: (axis) => { axis.ticks = [{value:1},{value:2},{value:3}]; },
-                            ticks: { stepSize: 1, autoSkip: false, callback: (v) => ({1:'Baixo', 2:'Médio', 3:'Alto'}[Math.round(v)] || '') },
-                            grid: { color: 'rgba(0,0,0,0.08)' }
-                        },
-                        y: {
-                            title: { display: true, text: 'Impacto → maior', font: { weight: 'bold' } },
-                            type: 'linear',
-                            min: 0.5, max: 3.5,
-                            afterBuildTicks: (axis) => { axis.ticks = [{value:1},{value:2},{value:3}]; },
-                            ticks: { stepSize: 1, autoSkip: false, callback: (v) => ({1:'Baixo', 2:'Médio', 3:'Alto'}[Math.round(v)] || '') },
-                            grid: { color: 'rgba(0,0,0,0.08)' }
-                        }
-                    },
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                            callbacks: {
-                                title: (ctx) => ctx[0].raw.label,
-                                label: (ctx) => {
-                                    const r = ctx.raw;
-                                    const v = r.vuln.length > 80 ? r.vuln.slice(0,77)+'...' : r.vuln;
-                                    return [v, `Impacto: ${r.impacto} · Esforço: ${r.esforco}` + (r.prioridade ? ` · Prioridade: ${r.prioridade}` : '')];
-                                }
-                            }
-                        }
-                    }
-                }
-            });
         }
 
         function drawRadarChart(labels, data) {
